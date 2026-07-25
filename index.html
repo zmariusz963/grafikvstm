@@ -1,0 +1,2092 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grafik pracy personelu – Sklep</title>
+<style>
+  :root{
+    --bg:#f4f6f9; --panel:#ffffff; --border:#dde3ea; --text:#1f2937; --muted:#6b7280;
+    --primary:#2563eb; --primary-dark:#1d4ed8;
+    --rano:#dbeafe; --rano-text:#1e40af;
+    --popo:#ffedd5; --popo-text:#9a3412;
+    --miedzy:#dcfce7; --miedzy-text:#166534;
+    --wolne:#e5e7eb; --wolne-text:#4b5563;
+    --prosba:#ccfbf1; --prosba-text:#0f766e;
+    --urlop:#ede9fe; --urlop-text:#5b21b6;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    background:var(--bg); color:var(--text); padding:24px;
+  }
+  .container{max-width:1400px; margin:0 auto;}
+  h1{font-size:22px; margin-bottom:4px;}
+  h2{font-size:16px; margin:0 0 12px;}
+  .panel{
+    background:var(--panel); border:1px solid var(--border); border-radius:10px;
+    padding:18px 20px; margin-bottom:18px; box-shadow:0 1px 2px rgba(0,0,0,.03);
+  }
+  .hint{font-size:12.5px; color:var(--muted); margin:0 0 8px; line-height:1.5;}
+  textarea{
+    width:100%; border:1px solid var(--border); border-radius:8px; padding:10px;
+    font-family:inherit; font-size:13px; resize:vertical;
+  }
+  button{
+    cursor:pointer; border:1px solid var(--border); background:#fff; color:var(--text);
+    border-radius:7px; padding:8px 14px; font-size:13px; font-weight:500;
+  }
+  button:hover{background:#f0f2f5;}
+  button.primary{background:var(--primary); color:#fff; border-color:var(--primary-dark);}
+  button.primary:hover{background:var(--primary-dark);}
+  button.small{padding:4px 8px; font-size:12px;}
+  button.danger{color:#b91c1c; border-color:#fecaca;}
+  .row{margin-top:10px;}
+  .team-controls{display:flex; align-items:center; gap:16px; margin-bottom:12px; flex-wrap:wrap;}
+  .shift-settings{display:flex; gap:22px; flex-wrap:wrap; align-items:center; font-size:13.5px;}
+  .shift-settings input[type=number]{width:52px; padding:4px; border:1px solid var(--border); border-radius:6px;}
+  .week-controls{display:flex; align-items:center; gap:12px; margin-bottom:14px; flex-wrap:wrap;}
+  #weekLabel{font-weight:600; font-size:14px;}
+  .table-wrap{overflow-x:auto;}
+  table{border-collapse:collapse; width:100%; font-size:11.5px; table-layout:fixed; min-width:720px;}
+  #employeeTable{table-layout:auto; min-width:0;}
+  th, td{border:1px solid var(--border); padding:3px 4px; text-align:center; white-space:normal; word-break:break-word; line-height:1.25;}
+  thead th{background:#f8fafc; font-weight:600;}
+  #employeeTable th, #employeeTable td{text-align:left; white-space:nowrap;}
+  #employeeTable input[type=text]{width:150px; border:1px solid var(--border); border-radius:6px; padding:4px 6px;}
+  #employeeTable input[type=number]{width:80px; border:1px solid var(--border); border-radius:6px; padding:4px 6px;}
+  #employeeTable select{border:1px solid var(--border); border-radius:6px; padding:4px 6px;}
+  .name-cell{text-align:left !important; font-weight:600; min-width:0; width:11%;}
+  .pos-cell{text-align:left !important; font-size:10.5px; color:var(--muted); min-width:0; width:9%;}
+  .shift-cell{cursor:pointer; font-weight:600; user-select:none;}
+  .shift-cell:hover{outline:2px solid var(--primary); outline-offset:-2px;}
+  .edit-hours-btn{
+    display:inline-block; margin-left:5px; cursor:pointer; opacity:.55;
+    font-size:11px; padding:0 2px; border-radius:3px;
+  }
+  .edit-hours-btn:hover{opacity:1; background:rgba(255,255,255,.5);}
+  .s-R{background:var(--rano); color:var(--rano-text);}
+  .s-P{background:var(--popo); color:var(--popo-text);}
+  .s-M{background:var(--miedzy); color:var(--miedzy-text);}
+  .s-W{background:var(--wolne); color:var(--wolne-text);}
+  .s-A{background:var(--prosba); color:var(--prosba-text);}
+  .s-U{background:var(--urlop); color:var(--urlop-text);}
+  .s-Z{background:#374151; color:#f3f4f6;}
+  .shift-cell.other-store-shift{ box-shadow: inset 0 0 0 2px #7c3aed; }
+  tfoot td{background:#f8fafc; font-weight:600; font-size:12.5px;}
+  .target-cell{white-space:nowrap; padding-left:1px; padding-right:1px;}
+  .target-cell input[type=number]{
+    width:24px; padding:1px 0; font-size:12px; text-align:center;
+    border:1px solid var(--border); border-radius:3px; -moz-appearance:textfield;
+  }
+  .target-cell input[type=number]::-webkit-inner-spin-button,
+  .target-cell input[type=number]::-webkit-outer-spin-button{
+    -webkit-appearance:none; margin:0;
+  }
+  tfoot input[type=number]{width:44px; padding:2px; border:1px solid var(--border); border-radius:5px; text-align:center;}
+  .legend{display:flex; gap:14px; flex-wrap:wrap; margin-top:10px; font-size:12px;}
+  .legend span{display:inline-flex; align-items:center; gap:5px;}
+  .legend i{width:12px; height:12px; border-radius:3px; display:inline-block;}
+  .pos-badge{display:inline-block; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:600;}
+  .pos-0{background:#fee2e2; color:#991b1b;}
+  .pos-1{background:#fef3c7; color:#92400e;}
+  .pos-2{background:#dbeafe; color:#1e40af;}
+  .pos-3{background:#e5e7eb; color:#374151;}
+  .pos-4{background:#fef3c7; color:#92400e;}
+  .pos-5{background:#ede9fe; color:#5b21b6;}
+  .agency-tag{
+    display:inline-block; margin-left:6px; padding:1px 7px; border-radius:10px;
+    font-size:10px; font-weight:700; background:#fef3c7; color:#92400e; vertical-align:middle;
+  }
+  .other-store-tag{
+    display:inline-block; margin-left:6px; padding:1px 7px; border-radius:10px;
+    font-size:10px; font-weight:700; background:#ede9fe; color:#5b21b6; vertical-align:middle;
+  }
+  .week-block{margin-bottom:26px;}
+  .week-block h3{font-size:13px; margin:0 0 8px; color:var(--muted); font-weight:600;}
+  th.outside-month{color:#b0b7c3; background:#f1f3f6;}
+  th.closed-day{background:#374151; color:#f3f4f6;}
+  .print-only{display:none;}
+
+  .watermark{
+    position:fixed; top:10px; right:18px;
+    pointer-events:none; z-index:9999;
+  }
+  .watermark span{
+    font-size:14px; font-weight:700; color:#000; opacity:.3;
+    white-space:nowrap; letter-spacing:1px;
+  }
+
+  @page{ size: A4 landscape; margin: 10mm; }
+
+  @media print{
+    .watermark{ position:fixed; }
+    .watermark span{ opacity:.12; color:#000; }
+    .no-print, .edit-hours-btn{display:none !important;}
+    .print-only{display:block !important;}
+    body{background:#fff; padding:0; color:#000; font-size:11px;}
+    .panel{box-shadow:none; border:none; padding:0; margin-bottom:14px;}
+    .container{max-width:none; width:100%;}
+    h2{font-size:15px; margin-bottom:6px;}
+    .week-block{page-break-inside:avoid; break-inside:avoid-page; margin-bottom:12px;}
+    .week-block h3{font-size:11px;}
+    table{font-size:9.5px; width:100%; table-layout:fixed; min-width:0;}
+    th, td{padding:3px 4px; border-color:#999; overflow:hidden;}
+    .shift-cell{cursor:default;}
+    tfoot input[type=number]{
+      border:none; background:transparent; padding:0; width:auto;
+      -moz-appearance:textfield; text-align:center; color:inherit; font:inherit;
+    }
+    tfoot input[type=number]::-webkit-inner-spin-button,
+    tfoot input[type=number]::-webkit-outer-spin-button{ -webkit-appearance:none; margin:0; }
+  }
+</style>
+</head>
+<body>
+<div class="watermark"><span>Zalewski</span></div>
+<div class="container">
+  <h1>Grafik pracy personelu – Sklep</h1>
+
+  <section class="panel no-print">
+    <h2>Zespół</h2>
+    <div class="team-controls">
+      <div>Liczba osób w zespole: <strong id="teamCount">0</strong></div>
+      <button id="addEmployeeBtn">+ Dodaj pracownika</button>
+    </div>
+    <div class="table-wrap">
+    <table id="employeeTable">
+      <thead>
+        <tr>
+          <th>Imię i nazwisko</th>
+          <th>Stanowisko</th>
+          <th>Tryb tygodniowy (blokowy)</th>
+          <th>Limit dni w miesiącu (inny sklep)</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="employeeBody"></tbody>
+    </table>
+    </div>
+  </section>
+
+  <section class="panel no-print">
+    <h2>Ustawienia zmian</h2>
+    <div class="shift-settings">
+      <label>Początek zmiany rannej: <input type="number" id="ranoStart" value="6" min="4" max="8"> : <input type="number" id="ranoStartMin" value="0" min="0" max="59" step="5" style="width:44px"> (8h)</label>
+      <label>Początek zmiany popołudniowej: <input type="number" id="popoStart" value="14" min="12" max="16"> : <input type="number" id="popoStartMin" value="0" min="0" max="59" step="5" style="width:44px"> (8h)</label>
+      <label><input type="checkbox" id="enableMiedzy"> Zmiana "między" (łącznikowa)</label>
+      <label>Początek zmiany między: <input type="number" id="miedzyStart" value="10" min="8" max="12"> : <input type="number" id="miedzyStartMin" value="0" min="0" max="59" step="5" style="width:44px"> (8h)</label>
+      <label><input type="checkbox" id="blockRuleAll" checked> Wymuszaj tryb tygodniowy blokowy (tydzień rano / tydzień popołudnie) tam gdzie włączony</label>
+    </div>
+    <div class="legend row">
+      <span><i class="s-R"></i> Rano</span>
+      <span><i class="s-M"></i> Między</span>
+      <span><i class="s-P"></i> Popołudnie</span>
+      <span><i class="s-W"></i> Wolne</span>
+      <span><i class="s-A"></i> Wolne (prośba)</span>
+      <span><i class="s-U"></i> Urlop</span>
+      <span><i class="s-Z"></i> Zamknięte (niedziela / święto)</span>
+      <span><i style="box-shadow:inset 0 0 0 2px #7c3aed; background:var(--rano);"></i> Zmiana z innego sklepu</span>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2 class="no-print">Grafik miesięczny</h2>
+    <h2 class="print-only">Grafik pracy – <span id="printMonthLabel"></span></h2>
+    <div class="week-controls no-print">
+      <button id="prevMonth">◀ Poprzedni miesiąc</button>
+      <span id="monthLabel"></span>
+      <button id="nextMonth">Następny miesiąc ▶</button>
+      <button id="generateBtn" class="primary">⚙ Generuj cały miesiąc</button>
+      <button id="clearMonthBtn" class="danger">🗑 Wyczyść szablon miesiąca</button>
+      <button id="clearMonthKeepAbsencesBtn" class="danger">🗑 Wyczyść bez wolnych/urlopów</button>
+      <button id="printBtn">🖨 Drukuj grafik</button>
+    </div>
+    <p class="hint no-print">
+      Miesiąc jest rozpisany jako kolejne tabele tygodniowe (poniedziałek–niedziela). Kliknij komórkę zmiany, aby przejść
+      przez kolejne stany: Wolne → Rano → (Między-zmiana) → Popołudnie → Wolne (prośba) → Urlop → Wolne — dzięki
+      temu prośby grafikowe i urlopy można wprowadzać bezpośrednio na grafiku, bez wklejania listy w polu wyżej.
+      Shift+klik przesuwa start zmiany o godzinę, Alt+klik pozwala wpisać dokładne przesunięcie w minutach (np. 6:15
+      zamiast 6:00), a ikona ✎ przy zmianie pozwala ustawić dowolną godzinę rozpoczęcia i zakończenia niezależnie (np.
+      07:30-15:45). Wszystkie te edycje pomijają warianty łamiące zasadę min. 11h odpoczynku. Wiersze na dole każdego
+      tygodnia pozwalają ustawić wymaganą liczbę osób na zmianę. Dni spoza wybranego miesiąca są wyszarzone w nagłówku,
+      ale nadal edytowalne (to naturalna kontynuacja grafiku z sąsiedniego tygodnia).
+    </p>
+    <div id="monthContainer"></div>
+  </section>
+
+  <section class="panel no-print">
+    <h2>Kopia zapasowa danych</h2>
+    <p class="hint">
+      Dane (zespół, grafik, ustawienia) są zapisane tylko w tej przeglądarce na tym komputerze. Eksportuj je do pliku,
+      żeby zrobić kopię zapasową albo przenieść grafik na inny komputer / do innej przeglądarki. Import nadpisze
+      wszystkie obecne dane w tej przeglądarce.
+    </p>
+    <div class="row">
+      <button id="exportBtn">⬇ Eksportuj dane do pliku</button>
+      <button id="importBtn">⬆ Importuj dane z pliku</button>
+      <input type="file" id="importFileInput" accept="application/json" style="display:none">
+    </div>
+  </section>
+</div>
+
+<script>
+const STORAGE_KEY = 'grafikPracy_v1';
+const DAY_NAMES = ['Pon','Wt','Śr','Czw','Pt','Sob','Nd'];
+const POSITIONS = ['Kierownik','Zastępca kierownika','Pracownik funkcyjny','Pracownik sklepu','Agencja pracy tymczasowej','Pracownik z innego sklepu'];
+
+let state = {
+  employees: [], // {id,name,position,blockRotation,blockStartType,agencyWorker,otherStoreWorker}
+  settings: { ranoStart:6, ranoStartMin:0, popoStart:14, popoStartMin:0, miedzyEnabled:true, miedzyStart:10, miedzyStartMin:0, blockRuleAll:true },
+  monthISO: null, // 'YYYY-MM' currently displayed month
+  weeks: {} // key: weekStartISO (Monday) -> { targets:[{r,p,m}]x7, schedule: { empId: [ {type,offset} x7 ] }, absences: { empId: [reason x7] } }
+};
+
+function uid(){ return 'e'+Math.random().toString(36).slice(2,9); }
+
+// Merges a saved/imported state object onto the live default `state`,
+// filling in any settings added after the data was first saved. Shared by
+// load() (reading localStorage) and the import-from-file feature, so both
+// paths end up with an equally well-formed state.
+function applyLoadedState(parsed){
+  state = Object.assign(state, parsed);
+  if(parsed.settings) state.settings = Object.assign({ ranoStartMin:0, popoStartMin:0, miedzyStartMin:0 }, parsed.settings);
+  // Zmiana "między" ma być zawsze włączona automatycznie, bez potrzeby
+  // ręcznego zaznaczania checkboxa - nawet dla wcześniej zapisanych sesji,
+  // które miały ją wyłączoną zanim stała się domyślna.
+  state.settings.miedzyEnabled = true;
+  delete state.settings.nocEnabled;
+  delete state.settings.nocStart;
+  delete state.settings.nocStartMin;
+  // Niedziele handlowe zostały usunięte z aplikacji - sklep jest teraz
+  // zawsze zamknięty w każdą niedzielę, bez wyjątków.
+  delete state.settings.openSundays;
+  // Zmiana nocna została usunięta z aplikacji - dowolne zapisane wcześniej
+  // zmiany typu 'N' (z sesji sprzed usunięcia) zamieniamy na zwykłe Wolne,
+  // żeby nie zostawić martwych, nierozpoznawanych komórek w grafiku.
+  Object.values(state.weeks || {}).forEach(w => {
+    Object.values(w.schedule || {}).forEach(cells => {
+      cells.forEach(c => { if(c.type === 'N') { c.type = 'W'; c.offset = 0; } });
+    });
+    (w.targets || []).forEach(t => { delete t.n; });
+  });
+  if(!state.monthISO){ state.monthISO = ymKey(new Date()); }
+}
+
+function load(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw) applyLoadedState(JSON.parse(raw));
+  }catch(e){ console.warn('load failed', e); }
+  if(!state.monthISO){ state.monthISO = ymKey(new Date()); }
+}
+
+function ymKey(d){
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+
+function getMonthWeeks(monthISO){
+  const [year, month] = monthISO.split('-').map(Number);
+  const firstDay = new Date(year, month-1, 1);
+  const lastDay = new Date(year, month, 0);
+  const weeks = [];
+  let cur = mondayOf(firstDay);
+  while(cur <= lastDay){
+    weeks.push(isoDate(cur));
+    cur = new Date(cur);
+    cur.setDate(cur.getDate()+7);
+  }
+  return weeks;
+}
+
+function save(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function isoDate(d){
+  // Local-date key (YYYY-MM-DD), unlike toISOString() this never shifts to
+  // the previous/next day for timezones ahead of/behind UTC.
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function mondayOf(d){
+  const date = new Date(d);
+  const day = date.getDay(); // 0 sun .. 6 sat
+  const diff = (day === 0 ? -6 : 1 - day);
+  date.setDate(date.getDate() + diff);
+  date.setHours(0,0,0,0);
+  return date;
+}
+
+function fmtDate(d){
+  return d.toLocaleDateString('pl-PL', { day:'2-digit', month:'2-digit' });
+}
+
+function easterSunday(year){
+  // Anonymous Gregorian algorithm (Meeus/Jones/Butcher).
+  const a = year % 19, b = Math.floor(year / 100), c = year % 100;
+  const d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4), k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31);
+  const day = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(year, month - 1, day);
+}
+
+const polishHolidaysCache = {};
+
+function getPolishHolidays(year){
+  // Ustawowo wolne dni od handlu w Polsce: święta stałe + ruchome (liczone od Wielkanocy).
+  if(polishHolidaysCache[year]) return polishHolidaysCache[year];
+  const fixed = [[1,1],[1,6],[5,1],[5,3],[8,15],[11,1],[11,11],[12,25],[12,26]];
+  const set = new Set(fixed.map(([m,d]) => isoDate(new Date(year, m-1, d))));
+  const easter = easterSunday(year);
+  const easterMonday = new Date(easter); easterMonday.setDate(easter.getDate() + 1);
+  const corpusChristi = new Date(easter); corpusChristi.setDate(easter.getDate() + 60);
+  set.add(isoDate(easter));
+  set.add(isoDate(easterMonday));
+  set.add(isoDate(corpusChristi));
+  polishHolidaysCache[year] = set;
+  return set;
+}
+
+function isDayClosed(date){
+  const iso = isoDate(date);
+  if(getPolishHolidays(date.getFullYear()).has(iso)) return true;
+  if(date.getDay() === 0) return true;
+  return false;
+}
+
+function weekDates(weekStartISO){
+  const start = new Date(weekStartISO+'T00:00:00');
+  const out = [];
+  for(let i=0;i<7;i++){
+    const d = new Date(start);
+    d.setDate(d.getDate()+i);
+    out.push(d);
+  }
+  return out;
+}
+
+function ensureWeek(weekStartISO){
+  if(!state.weeks[weekStartISO]){
+    state.weeks[weekStartISO] = {
+      targets: Array.from({length:7}, () => ({r:2,m:0,p:2})),
+      schedule: {},
+      absences: {}
+    };
+  }
+  const w = state.weeks[weekStartISO];
+  state.employees.forEach(emp => {
+    if(!w.schedule[emp.id]) w.schedule[emp.id] = Array.from({length:7}, () => ({type:'W', offset:0}));
+    if(!w.absences[emp.id]) w.absences[emp.id] = Array.from({length:7}, () => null);
+  });
+  // Min. 2 osoby na Rano/Popołudnie zawsze; Między to jednoosobowe
+  // rozszerzenie obsady, więc jej minimum to 0.
+  w.targets.forEach(t => {
+    ['r','p'].forEach(k => { t[k] = Math.max(2, t[k] || 2); });
+    t.m = Math.max(0, t.m || 0);
+    delete t.n;
+  });
+  return w;
+}
+
+// Urlop obejmujący WSZYSTKIE dni robocze tygodnia (pon-pt) w systemie
+// przeciętnie pięciodniowego tygodnia pracy oznacza, że w tym tygodniu nie
+// ma żadnego dnia do "przesunięcia" na sobotę - sobota jest wtedy wolna
+// automatycznie, bez wyjątku, niezależnie od obsady.
+function isFullWeekUrlopSaturday(w, empId){
+  const abs = w.absences[empId];
+  if(!abs) return false;
+  for(let d=0; d<5; d++){ if(abs[d] !== 'U') return false; }
+  return true;
+}
+
+function posRank(pos){
+  const idx = POSITIONS.indexOf(pos);
+  return idx === -1 ? POSITIONS.length : idx;
+}
+
+function sortedEmployees(){
+  return [...state.employees].sort((a,b)=>{
+    const r = posRank(a.position) - posRank(b.position);
+    if(r !== 0) return r;
+    return a.name.localeCompare(b.name, 'pl');
+  });
+}
+
+// Obsada każdej zmiany (2+ osoby) musi zawierać co najmniej jedną osobę
+// kierowniczą/funkcyjną (kierownik, zastępca lub pracownik funkcyjny) - kim
+// jest druga (i kolejne) osoba nie ma znaczenia. Patrz [[grafik_pracy_obsada_reguly]].
+function isSupervisorRole(emp){ return posRank(emp.position) <= 2; }
+function isWorkerRole(emp){ return posRank(emp.position) === 3; }
+// True whether flagged via the checkbox OR via choosing "Agencja pracy
+// tymczasowej" as the stanowisko - either way this person is doraźna pomoc,
+// excluded from the automatic generator.
+function isAgencyWorker(emp){ return !!emp.agencyWorker || emp.position === 'Agencja pracy tymczasowej'; }
+function isOtherStoreWorker(emp){ return !!emp.otherStoreWorker || emp.position === 'Pracownik z innego sklepu'; }
+// Pracownik z innego sklepu może pracować, ale tylko na zmianie, na której
+// jest już Zastępca lub Kierownik (prowadzący) - nigdy sam / bez nadzoru.
+function isLeadRole(emp){ return emp.position === 'Kierownik' || emp.position === 'Zastępca kierownika'; }
+function shiftHasLead(w, d, type, emps){
+  return emps.some(e => w.schedule[e.id][d].type === type && isLeadRole(e));
+}
+
+function shiftComposition(w, d, type, emps){
+  const assigned = emps.filter(e => w.schedule[e.id][d].type === type);
+  return {
+    count: assigned.length,
+    hasSupervisor: assigned.some(isSupervisorRole)
+  };
+}
+
+/* ---------- Employee panel ---------- */
+
+function renderEmployeeTable(){
+  const body = document.getElementById('employeeBody');
+  body.innerHTML = '';
+  sortedEmployees().forEach(emp => {
+    const tr = document.createElement('tr');
+
+    const tdName = document.createElement('td');
+    const nameInput = document.createElement('input');
+    nameInput.type = 'text'; nameInput.value = emp.name;
+    nameInput.addEventListener('change', () => { emp.name = nameInput.value.trim() || emp.name; save(); renderAll(); });
+    tdName.appendChild(nameInput);
+    tr.appendChild(tdName);
+
+    const tdPos = document.createElement('td');
+    const sel = document.createElement('select');
+    POSITIONS.forEach((p,i) => {
+      const opt = document.createElement('option');
+      opt.value = p; opt.textContent = p;
+      if(emp.position === p) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    sel.addEventListener('change', () => { emp.position = sel.value; save(); renderAll(); });
+    tdPos.appendChild(sel);
+    tr.appendChild(tdPos);
+
+    const isHelper = isAgencyWorker(emp) || isOtherStoreWorker(emp);
+
+    const tdBlock = document.createElement('td');
+    if(isHelper){
+      tdBlock.textContent = '—';
+      tdBlock.title = 'Doraźna pomoc (agencja / inny sklep) nie pracuje w trybie blokowym.';
+    } else {
+      const chk = document.createElement('input');
+      chk.type = 'checkbox'; chk.checked = !!emp.blockRotation;
+      chk.addEventListener('change', () => { emp.blockRotation = chk.checked; save(); });
+      tdBlock.appendChild(chk);
+    }
+    tr.appendChild(tdBlock);
+
+    const tdMonthDays = document.createElement('td');
+    if(isOtherStoreWorker(emp)){
+      const monthDaysInput = document.createElement('input');
+      monthDaysInput.type = 'number'; monthDaysInput.min = 0;
+      monthDaysInput.value = emp.monthDays || '';
+      monthDaysInput.placeholder = 'bez limitu';
+      monthDaysInput.title = 'Maksymalna liczba dni w miesiącu, na jakie można zaplanować tego pracownika z innego sklepu. Puste = bez limitu.';
+      monthDaysInput.addEventListener('change', () => {
+        const n = parseInt(monthDaysInput.value, 10);
+        emp.monthDays = (!isNaN(n) && n > 0) ? n : null;
+        monthDaysInput.value = emp.monthDays || '';
+        save();
+      });
+      tdMonthDays.appendChild(monthDaysInput);
+    } else {
+      tdMonthDays.textContent = '—';
+      tdMonthDays.title = 'Limit dni w miesiącu dotyczy tylko pracownika z innego sklepu.';
+    }
+    tr.appendChild(tdMonthDays);
+
+    const tdDel = document.createElement('td');
+    const delBtn = document.createElement('button');
+    delBtn.className = 'small danger'; delBtn.textContent = 'Usuń';
+    delBtn.addEventListener('click', () => {
+      state.employees = state.employees.filter(e => e.id !== emp.id);
+      save(); renderAll();
+    });
+    tdDel.appendChild(delBtn);
+    tr.appendChild(tdDel);
+
+    body.appendChild(tr);
+  });
+  document.getElementById('teamCount').textContent = state.employees.length;
+}
+
+document.getElementById('addEmployeeBtn').addEventListener('click', () => {
+  state.employees.push({ id: uid(), name: 'Nowy pracownik', position: 'Pracownik sklepu', blockRotation:false, blockStartType:'R', agencyWorker:false, otherStoreWorker:false });
+  save(); renderAll();
+});
+
+/* ---------- Settings ---------- */
+
+['ranoStart','ranoStartMin','popoStart','popoStartMin','miedzyStart','miedzyStartMin'].forEach(id => {
+  document.getElementById(id).addEventListener('change', e => {
+    const n = parseInt(e.target.value, 10);
+    // Puste lub niepoprawne pole ignorujemy (zostaje poprzednia wartość),
+    // żeby nie zapisać NaN, które psuje wyliczanie godzin zmian.
+    if(!isNaN(n)) state.settings[id] = n;
+    e.target.value = state.settings[id]; // odbij realnie obowiązującą wartość
+    save(); renderMonth();
+  });
+});
+document.getElementById('enableMiedzy').addEventListener('change', e => {
+  state.settings.miedzyEnabled = e.target.checked;
+  save(); renderMonth();
+});
+document.getElementById('blockRuleAll').addEventListener('change', e => {
+  state.settings.blockRuleAll = e.target.checked;
+  save();
+});
+
+/* ---------- Schedule rendering ---------- */
+
+function formatHM(totalMinutes){
+  const wrapped = ((totalMinutes % 1440) + 1440) % 1440;
+  const h = Math.floor(wrapped / 60);
+  const m = wrapped % 60;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+}
+
+function parseHM(str){
+  const m = String(str).trim().match(/^(\d{1,2}):(\d{2})$/);
+  if(!m) return null;
+  const h = parseInt(m[1],10), min = parseInt(m[2],10);
+  if(h < 0 || h > 29 || min < 0 || min > 59) return null;
+  return h * 60 + min;
+}
+
+// Start/end (minutes from midnight of the cell's own day; end can exceed
+// 1440 for shifts crossing midnight) for a work-shift cell, or null for a
+// day off / absence / closed day. Respects a per-cell custom start/end
+// (set via Ctrl+klik) before falling back to the type's default 8h window.
+function cellWindow(cell){
+  if(!cell || !isWorkShiftType(cell.type)) return null;
+  if(cell.customStart != null && cell.customEnd != null){
+    let end = cell.customEnd;
+    if(end <= cell.customStart) end += 1440;
+    return { start: cell.customStart, end };
+  }
+  const base = shiftBaseMinutes(cell.type);
+  if(base === null) return null;
+  const start = base + (cell.offset || 0);
+  return { start, end: start + 8 * 60 };
+}
+
+// 11h-rest check between two consecutive-day cells based on their ACTUAL time
+// windows, custom-aware (respects hand-set hours from Ctrl+klik). earlierCell
+// is the day before laterCell; a day off / absence / closed day (null window)
+// never blocks. Used everywhere a new/moved shift is validated against its
+// neighbours, both manual edits and auto-generation, so a cell with hand-set
+// hours (✎) is always respected.
+function restOkBetween(earlierCell, laterCell){
+  const a = cellWindow(earlierCell);
+  const b = cellWindow(laterCell);
+  if(!a || !b) return true;
+  return (b.start + 1440 - a.end) >= 11 * 60;
+}
+
+function shiftTimeLabel(cell){
+  const type = cell.type;
+  if(type === 'W') return 'Wolne';
+  if(type === 'A') return 'Wolne (prośba)';
+  if(type === 'U') return 'Urlop';
+  if(type === 'Z') return 'Zamknięte';
+  const win = cellWindow(cell);
+  if(!win) return '-';
+  const label = type === 'R' ? 'R' : type === 'M' ? 'M' : 'P';
+  return `${label} ${formatHM(win.start)}-${formatHM(win.end)}`;
+}
+
+function cellClass(type){
+  return { R:'s-R', P:'s-P', M:'s-M', W:'s-W', A:'s-A', U:'s-U', Z:'s-Z' }[type] || 's-W';
+}
+
+// Cycles W -> R -> (M) -> P -> A -> U -> W, skipping any work-shift type that
+// would break the 11h-rest rule against the neighbouring days (prevCell/
+// nextCell), so manual editing can't create the same violations the
+// auto-generator already avoids. Day-off states (W/A/U) are never blocked.
+function cycleShift(current, prevCell, nextCell){
+  const order = ['W','R'];
+  if(state.settings.miedzyEnabled) order.push('M');
+  order.push('P');
+  order.push('A','U');
+  const startIdx = order.indexOf(current.type);
+  for(let i=1; i<=order.length; i++){
+    const candidate = order[(startIdx+i) % order.length];
+    if(!isWorkShiftType(candidate)) return { type: candidate, offset: 0 };
+    const candCell = { type: candidate, offset: 0 };
+    const prevOk = !prevCell || restOkBetween(prevCell, candCell);
+    const nextOk = !nextCell || restOkBetween(candCell, nextCell);
+    if(prevOk && nextOk) return { type: candidate, offset: 0 };
+  }
+  return current; // no valid work shift fits here - stays as-is
+}
+
+function isWorkShiftType(type){
+  return type === 'R' || type === 'P' || type === 'M';
+}
+
+function offsetAllowed(cell, offset, prevCell, nextCell){
+  const candCell = { type: cell.type, offset };
+  const prevOk = !prevCell || restOkBetween(prevCell, candCell);
+  const nextOk = !nextCell || restOkBetween(candCell, nextCell);
+  return prevOk && nextOk;
+}
+
+function cycleOffset(cell, prevCell, nextCell){
+  if(!isWorkShiftType(cell.type)) return cell;
+  const sequence = [-60, 0, 60];
+  const startIdx = Math.max(0, sequence.indexOf(cell.offset));
+  for(let i=1; i<=sequence.length; i++){
+    const next = sequence[(startIdx + i) % sequence.length];
+    if(offsetAllowed(cell, next, prevCell, nextCell)) return { type: cell.type, offset: next };
+  }
+  return cell; // no offset in range keeps the 11h rest - leave unchanged
+}
+
+function promptMinuteOffset(cell, prevCell, nextCell){
+  if(!isWorkShiftType(cell.type)) return cell;
+  const input = window.prompt('Przesunięcie startu zmiany w minutach (np. -30, 15, 45):', String(cell.offset || 0));
+  if(input === null) return cell;
+  const minutes = parseInt(input, 10);
+  if(isNaN(minutes)) return cell;
+  const clamped = Math.max(-180, Math.min(180, minutes));
+  if(!offsetAllowed(cell, clamped, prevCell, nextCell)){
+    window.alert('To przesunięcie łamie zasadę min. 11h odpoczynku względem sąsiedniego dnia - nie zostało zastosowane.');
+    return cell;
+  }
+  return { type: cell.type, offset: clamped };
+}
+
+// Ctrl+klik: pełna, niezależna edycja godziny rozpoczęcia i zakończenia
+// zmiany (nie tylko przesunięcia startu) - pozwala też na zmiany inne niż 8h.
+function promptCustomWindow(cell, prevCell, nextCell){
+  if(!isWorkShiftType(cell.type)) return cell;
+  const current = cellWindow(cell);
+  const startInput = window.prompt('Godzina rozpoczęcia zmiany (HH:MM):', formatHM(current.start));
+  if(startInput === null) return cell;
+  const endInput = window.prompt('Godzina zakończenia zmiany (HH:MM):', formatHM(current.end));
+  if(endInput === null) return cell;
+  const startMin = parseHM(startInput);
+  const endMin = parseHM(endInput);
+  if(startMin === null || endMin === null){
+    window.alert('Nieprawidłowy format godziny. Użyj HH:MM, np. 06:15.');
+    return cell;
+  }
+  const candCell = { type: cell.type, offset: 0, customStart: startMin, customEnd: endMin };
+  const prevOk = !prevCell || restOkBetween(prevCell, candCell);
+  const nextOk = !nextCell || restOkBetween(candCell, nextCell);
+  if(!prevOk || !nextOk){
+    window.alert('Te godziny łamią zasadę min. 11h odpoczynku względem sąsiedniego dnia - nie zostały zastosowane.');
+    return cell;
+  }
+  return { type: cell.type, offset: 0, customStart: startMin, customEnd: endMin };
+}
+
+function buildWeekTable(weekStartISO){
+  const w = ensureWeek(weekStartISO);
+  const dates = weekDates(weekStartISO);
+  const closedDays = dates.map(isDayClosed);
+  const monthIdx = Number(state.monthISO.split('-')[1]) - 1;
+  const emps = sortedEmployees();
+
+  const block = document.createElement('div');
+  block.className = 'week-block';
+
+  const heading = document.createElement('h3');
+  heading.textContent = `Tydzień: ${fmtDate(dates[0])} – ${fmtDate(dates[6])} ${dates[6].getFullYear()}`;
+  block.appendChild(heading);
+
+  const wrap = document.createElement('div');
+  wrap.className = 'table-wrap';
+  const table = document.createElement('table');
+  wrap.appendChild(table);
+  block.appendChild(wrap);
+
+  // Head
+  const thead = document.createElement('thead');
+  const headRow = document.createElement('tr');
+  const th0 = document.createElement('th'); th0.textContent = 'Pracownik'; headRow.appendChild(th0);
+  const th1 = document.createElement('th'); th1.textContent = 'Stanowisko'; headRow.appendChild(th1);
+  DAY_NAMES.forEach((d,i) => {
+    const th = document.createElement('th');
+    th.textContent = `${d} ${fmtDate(dates[i])}` + (closedDays[i] ? ' (zamknięte)' : '');
+    if(dates[i].getMonth() !== monthIdx) th.classList.add('outside-month');
+    if(closedDays[i]) th.classList.add('closed-day');
+    headRow.appendChild(th);
+  });
+  thead.appendChild(headRow);
+  table.appendChild(thead);
+
+  // Body
+  const tbody = document.createElement('tbody');
+  emps.forEach(emp => {
+    const tr = document.createElement('tr');
+    const tdName = document.createElement('td'); tdName.className = 'name-cell';
+    tdName.appendChild(document.createTextNode(emp.name));
+    if(isAgencyWorker(emp)){
+      const agencyBadge = document.createElement('span');
+      agencyBadge.className = 'agency-tag';
+      agencyBadge.textContent = 'Agencja';
+      agencyBadge.title = 'Pracownik agencji pracy tymczasowej';
+      tdName.appendChild(agencyBadge);
+    }
+    if(isOtherStoreWorker(emp)){
+      const otherStoreBadge = document.createElement('span');
+      otherStoreBadge.className = 'other-store-tag';
+      otherStoreBadge.textContent = 'Z innego sklepu';
+      otherStoreBadge.title = 'Pracownik pożyczony z innego sklepu';
+      tdName.appendChild(otherStoreBadge);
+    }
+    tr.appendChild(tdName);
+
+    const tdPos = document.createElement('td'); tdPos.className = 'pos-cell';
+    const badge = document.createElement('span');
+    badge.className = 'pos-badge pos-' + posRank(emp.position);
+    badge.textContent = emp.position;
+    tdPos.appendChild(badge);
+    tr.appendChild(tdPos);
+
+    for(let d=0; d<7; d++){
+      const td = document.createElement('td');
+
+      if(closedDays[d]){
+        if(w.schedule[emp.id][d].type !== 'Z') w.schedule[emp.id][d] = { type:'Z', offset:0 };
+        td.className = 'shift-cell ' + cellClass('Z');
+        td.textContent = shiftTimeLabel({ type:'Z' });
+        td.title = 'Sklep zamknięty (niedziela niehandlowa lub święto) - dzień niedostępny do edycji.';
+        tr.appendChild(td);
+        continue;
+      }
+
+      if(d === 5 && isFullWeekUrlopSaturday(w, emp.id)){
+        w.schedule[emp.id][d] = { type:'W', offset:0, locked:true };
+        td.className = 'shift-cell ' + cellClass('W');
+        td.textContent = shiftTimeLabel({ type:'W' });
+        td.title = 'Cały tydzień urlopu (pon-pt) - sobota automatycznie wolna, dzień niedostępny do edycji.';
+        tr.appendChild(td);
+        continue;
+      }
+
+      const absence = w.absences[emp.id][d];
+      const cell = w.schedule[emp.id][d];
+      if(absence && cell.type === 'W'){
+        cell.type = absence;
+      }
+      td.className = 'shift-cell ' + cellClass(cell.type);
+      if(isOtherStoreWorker(emp) && isWorkShiftType(cell.type)){
+        td.classList.add('other-store-shift');
+        td.title = 'Zmiana pracownika z innego sklepu.';
+      }
+      const timeText = document.createElement('span');
+      timeText.textContent = shiftTimeLabel(cell);
+      td.appendChild(timeText);
+
+      if(isWorkShiftType(cell.type)){
+        const editBtn = document.createElement('span');
+        editBtn.className = 'edit-hours-btn';
+        editBtn.textContent = '✎';
+        editBtn.title = 'Ustaw dokładną godzinę rozpoczęcia i zakończenia tej zmiany';
+        editBtn.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          const prevCell = adjacentDayCell(w, weekStartISO, emp, d, -1);
+          const nextCell = adjacentDayCell(w, weekStartISO, emp, d, 1);
+          w.schedule[emp.id][d] = promptCustomWindow(cell, prevCell, nextCell);
+          save();
+          renderMonth();
+        });
+        td.appendChild(editBtn);
+      }
+
+      td.addEventListener('click', (ev) => {
+        const prevCell = adjacentDayCell(w, weekStartISO, emp, d, -1);
+        const nextCell = adjacentDayCell(w, weekStartISO, emp, d, 1);
+        if(ev.altKey){
+          w.schedule[emp.id][d] = promptMinuteOffset(cell, prevCell, nextCell);
+        } else if(ev.shiftKey){
+          w.schedule[emp.id][d] = cycleOffset(cell, prevCell, nextCell);
+        } else {
+          w.schedule[emp.id][d] = cycleShift(cell, prevCell, nextCell);
+          // Keep prośby/urlopy zaznaczone bezpośrednio na grafiku w sync z
+          // absences, żeby "Generuj cały miesiąc" ich nie nadpisał.
+          const newType = w.schedule[emp.id][d].type;
+          w.absences[emp.id][d] = (newType === 'A' || newType === 'U') ? newType : null;
+          // Świadomie kliknięte Wolne/prośba/urlop ma zostać przy kolejnym
+          // "Generuj" - odróżniamy to od domyślnego, jeszcze nie zdecydowanego
+          // Wolne (które generator ma prawo wypełnić zmianą).
+          if(!isWorkShiftType(newType)) w.schedule[emp.id][d].locked = true;
+        }
+        save();
+        renderMonth();
+      });
+      td.title = 'Klik: zmień typ zmiany. Shift+klik: przesuń o godzinę. Alt+klik: przesunięcie w minutach. Ikona ✎: ustaw dokładną godzinę rozpoczęcia i zakończenia.';
+      tr.appendChild(td);
+    }
+
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+
+  // Foot
+  const tfoot = document.createElement('tfoot');
+
+  const trTarget = document.createElement('tr');
+  const tdLabel = document.createElement('td'); tdLabel.colSpan = 2; tdLabel.textContent = 'Minimalna obsada (R' + (state.settings.miedzyEnabled ? ' / M' : '') + ' / P)';
+  trTarget.appendChild(tdLabel);
+  for(let d=0; d<7; d++){
+    const td = document.createElement('td');
+    td.classList.add('target-cell');
+
+    if(closedDays[d]){
+      td.textContent = 'Zamknięte';
+      td.classList.add('s-Z');
+      trTarget.appendChild(td);
+      continue;
+    }
+
+    const gapTitle = (type, target) => {
+      const c = shiftComposition(w, d, type, emps);
+      const bits = ['Minimalna liczba osób (obsadzono: ' + c.count + ')'];
+      if(target >= 1 && c.count >= target && !c.hasSupervisor){
+        bits.push('Brak: kierownik / zastępca / pracownik funkcyjny');
+      }
+      return bits.join(' — ');
+    };
+
+    const rIn = document.createElement('input'); rIn.type='number'; rIn.min=2; rIn.value = w.targets[d].r;
+    rIn.title = 'Rano: ' + gapTitle('R', w.targets[d].r);
+    rIn.addEventListener('change', () => { w.targets[d].r = Math.max(2, parseInt(rIn.value)||2); rIn.value = w.targets[d].r; save(); renderMonth(); });
+    td.appendChild(rIn);
+    if(state.settings.miedzyEnabled){
+      const mIn = document.createElement('input'); mIn.type='number'; mIn.min=0; mIn.value = w.targets[d].m;
+      mIn.title = 'Między: ' + gapTitle('M', w.targets[d].m);
+      mIn.addEventListener('change', () => { w.targets[d].m = Math.max(0, parseInt(mIn.value)||0); mIn.value = w.targets[d].m; save(); renderMonth(); });
+      td.appendChild(document.createTextNode('/'));
+      td.appendChild(mIn);
+    }
+    const pIn = document.createElement('input'); pIn.type='number'; pIn.min=2; pIn.value = w.targets[d].p;
+    pIn.title = 'Popołudnie: ' + gapTitle('P', w.targets[d].p);
+    pIn.addEventListener('change', () => { w.targets[d].p = Math.max(2, parseInt(pIn.value)||2); pIn.value = w.targets[d].p; save(); renderMonth(); });
+    td.appendChild(document.createTextNode('/')); td.appendChild(pIn);
+    trTarget.appendChild(td);
+  }
+  tfoot.appendChild(trTarget);
+
+  // Obsada realna: faktyczna liczba osób policzona z grafiku, w tym samym
+  // formacie R/M/P co wiersz powyżej, żeby łatwo porównać cel z realiami.
+  const trActual = document.createElement('tr');
+  const tdActualLabel = document.createElement('td'); tdActualLabel.colSpan = 2;
+  tdActualLabel.textContent = 'Obsada realna (R' + (state.settings.miedzyEnabled ? ' / M' : '') + ' / P)';
+  trActual.appendChild(tdActualLabel);
+  for(let d=0; d<7; d++){
+    const td = document.createElement('td');
+    if(closedDays[d]){
+      td.textContent = 'Zamknięte';
+      td.classList.add('s-Z');
+      trActual.appendChild(td);
+      continue;
+    }
+    const countFor = type => emps.reduce((acc, emp) => acc + (w.schedule[emp.id][d].type === type ? 1 : 0), 0);
+    const parts = [countFor('R')];
+    if(state.settings.miedzyEnabled) parts.push(countFor('M'));
+    parts.push(countFor('P'));
+    td.textContent = parts.join('/');
+    trActual.appendChild(td);
+  }
+  tfoot.appendChild(trActual);
+
+  table.appendChild(tfoot);
+
+  return block;
+}
+
+function getMonthDayRefs(monthISO){
+  // One entry per calendar day actually inside the month (weekStartISO + day
+  // index within that week's table) - week blocks can spill into the
+  // adjacent month, so this is what keeps monthly totals from over-counting.
+  const monthIdx = Number(monthISO.split('-')[1]) - 1;
+  const refs = [];
+  getMonthWeeks(monthISO).forEach(ws => {
+    weekDates(ws).forEach((date, dayIdx) => {
+      if(date.getMonth() === monthIdx) refs.push({ ws, dayIdx });
+    });
+  });
+  return refs;
+}
+
+function buildMonthSummaryTable(){
+  const emps = sortedEmployees().filter(e => !isAgencyWorker(e) && !isOtherStoreWorker(e));
+  const dayRefs = getMonthDayRefs(state.monthISO);
+
+  const block = document.createElement('div');
+  block.className = 'week-block';
+  const heading = document.createElement('h3');
+  heading.textContent = 'Podsumowanie miesiąca';
+  block.appendChild(heading);
+
+  const wrap = document.createElement('div');
+  wrap.className = 'table-wrap';
+  const table = document.createElement('table');
+  wrap.appendChild(table);
+  block.appendChild(wrap);
+
+  const thead = document.createElement('thead');
+  const headRow = document.createElement('tr');
+  ['Pracownik','Stanowisko','Rano (dni na urlopie)','Między','Popołudnie','Wolne','Wolne (prośba)','Urlop']
+    .forEach((label,i) => {
+      if(label === 'Między' && !state.settings.miedzyEnabled) return;
+      const th = document.createElement('th');
+      th.textContent = label;
+      headRow.appendChild(th);
+    });
+  thead.appendChild(headRow);
+  table.appendChild(thead);
+
+  const tbody = document.createElement('tbody');
+  emps.forEach(emp => {
+    const counts = { R:0, M:0, P:0, W:0, A:0, U:0, Z:0 };
+    dayRefs.forEach(({ws, dayIdx}) => {
+      const w = state.weeks[ws];
+      if(!w || !w.schedule[emp.id]) return;
+      const cell = w.schedule[emp.id][dayIdx];
+      if(cell.type in counts) counts[cell.type]++;
+    });
+
+    const tr = document.createElement('tr');
+    const tdName = document.createElement('td'); tdName.className = 'name-cell'; tdName.textContent = emp.name;
+    if(isAgencyWorker(emp)){
+      const agencyBadge = document.createElement('span');
+      agencyBadge.className = 'agency-tag';
+      agencyBadge.textContent = 'Agencja';
+      tdName.appendChild(agencyBadge);
+    }
+    if(isOtherStoreWorker(emp)){
+      const otherStoreBadge = document.createElement('span');
+      otherStoreBadge.className = 'other-store-tag';
+      otherStoreBadge.textContent = 'Z innego sklepu';
+      tdName.appendChild(otherStoreBadge);
+    }
+    tr.appendChild(tdName);
+    const tdPos = document.createElement('td'); tdPos.className = 'pos-cell';
+    const badge = document.createElement('span');
+    badge.className = 'pos-badge pos-' + posRank(emp.position);
+    badge.textContent = emp.position;
+    tdPos.appendChild(badge);
+    tr.appendChild(tdPos);
+
+    const addCell = (text, title) => { const td = document.createElement('td'); td.textContent = text; if(title) td.title = title; tr.appendChild(td); };
+    // Rano pokazuje w nawiasie liczbę dni urlopu tej osoby w miesiącu, np. "11 (2)".
+    addCell(counts.U ? `${counts.R} (${counts.U})` : counts.R, counts.U ? `${counts.U} dzień/dni urlopu w tym miesiącu` : undefined);
+    if(state.settings.miedzyEnabled) addCell(counts.M);
+    addCell(counts.P);
+    // "Wolne" obejmuje też dni, w których sklep był zamknięty (niedziela
+    // niehandlowa / święto) - to też dzień bez pracy dla pracownika, więc
+    // liczy się do jego dni wolnych w miesiącu.
+    addCell(counts.W + counts.Z, counts.Z ? `W tym ${counts.Z} dzień/dni zamknięcia sklepu (niedziela/święto)` : undefined);
+    addCell(counts.A);
+    addCell(counts.U);
+
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+
+  return block;
+}
+
+function renderMonth(){
+  const container = document.getElementById('monthContainer');
+  container.innerHTML = '';
+  getMonthWeeks(state.monthISO).forEach(ws => {
+    container.appendChild(buildWeekTable(ws));
+  });
+  container.appendChild(buildMonthSummaryTable());
+}
+
+/* ---------- Auto-generation ---------- */
+
+function shiftBaseMinutes(type){
+  if(type === 'R') return state.settings.ranoStart * 60 + (state.settings.ranoStartMin || 0);
+  if(type === 'P') return state.settings.popoStart * 60 + (state.settings.popoStartMin || 0);
+  if(type === 'M') return state.settings.miedzyStart * 60 + (state.settings.miedzyStartMin || 0);
+  return null; // day off / absence / closed - no fixed hours
+}
+
+// Deterministic replacement for the old mutable "nextBlock" flip - computes
+// which type (Rano/Popołudnie) a block-rotation employee works in a given
+// week purely from the week's position relative to a fixed Monday epoch and
+// the employee's own starting preference. Calling this any number of times
+// (e.g. clicking "Generuj" repeatedly) always gives the same answer, so it
+// can't drift the way a mutating counter could - and it keeps alternating
+// correctly across month boundaries without needing to remember state.
+const BLOCK_ROTATION_EPOCH = new Date(2024, 0, 1); // a Monday
+function blockTypeForWeek(emp, weekStartISO){
+  const weekDate = new Date(weekStartISO + 'T00:00:00');
+  const weekIndex = Math.round((weekDate - BLOCK_ROTATION_EPOCH) / (7 * 86400000));
+  const start = emp.blockStartType === 'P' ? 'P' : 'R';
+  const flip = ((weekIndex % 2) + 2) % 2 === 1; // handle negative weekIndex safely
+  return flip ? (start === 'R' ? 'P' : 'R') : start;
+}
+
+function prevWeekKey(weekStartISO){
+  const d = new Date(weekStartISO+'T00:00:00');
+  d.setDate(d.getDate()-7);
+  return isoDate(d);
+}
+
+function nextWeekKey(weekStartISO){
+  const d = new Date(weekStartISO+'T00:00:00');
+  d.setDate(d.getDate()+7);
+  return isoDate(d);
+}
+
+// Full cell (type+offset) of the day right before/after day `d`, crossing the
+// week boundary when needed - used to validate manual edits in both directions.
+function adjacentDayCell(w, weekStartISO, emp, d, direction){
+  const idx = d + direction;
+  if(idx >= 0 && idx <= 6) return w.schedule[emp.id][idx];
+  const neighborWeek = state.weeks[direction < 0 ? prevWeekKey(weekStartISO) : nextWeekKey(weekStartISO)];
+  if(!neighborWeek || !neighborWeek.schedule[emp.id]) return null;
+  return neighborWeek.schedule[emp.id][direction < 0 ? 6 : 0];
+}
+
+// Polskie prawo pracy: przeciętnie 5-dniowy tydzień pracy w PRZYJĘTYM OKRESIE
+// ROZLICZENIOWYM - tutaj miesięcznym. Global helpers (used by both the
+// per-week generator and the month-level "top up to quota" pass).
+// Everyone (poza agencją / doraźną pomocą) liczy się jako pełny etat -
+// ta sama liczba dni w miesiącu dla wszystkich, niezależnie od wpisanego
+// wymiaru godzin.
+// Dokładny wymiar czasu pracy wg art. 130 Kodeksu pracy: 8h za każdy dzień
+// roboczy pon-pt w miesiącu, pomniejszone o 8h za każde święto ustawowo
+// wolne od pracy przypadające w dniu innym niż niedziela (również gdy
+// wypada w sobotę). Liczba dni wolnych, jakie każdy pełnoetatowy pracownik
+// MUSI mieć w miesiącu, to dni_w_miesiącu - ten wymiar w dniach - nie mniej,
+// nie więcej.
+function nominalWorkDaysInMonth(monthISO){
+  const [y, mo] = monthISO.split('-').map(Number);
+  const daysInMonth = new Date(y, mo, 0).getDate();
+  const holidays = getPolishHolidays(y);
+  let workDays = 0;
+  for(let day = 1; day <= daysInMonth; day++){
+    const date = new Date(y, mo - 1, day);
+    const dow = date.getDay(); // 0=Nd..6=Sob
+    if(dow >= 1 && dow <= 5) workDays++;
+    if(holidays.has(isoDate(date)) && dow !== 0) workDays--;
+  }
+  return workDays;
+}
+function monthlyQuotaFor(emp){
+  return nominalWorkDaysInMonth(state.monthISO);
+}
+// Urlop i Wolne (na prośbę) to zatwierdzone, wiążące nieobecności - dni na nie
+// przypadające NIE są dostępne do obsadzenia, więc nie mogą też być wliczane
+// do wymaganej liczby dni pracy. Bez tego generator próbowałby upchnąć cały
+// pełny wymiar w pozostałych tygodniach, zjadając przy tym wszystkie zwykłe
+// dni wolne (np. pracownik z tygodniem urlopu wychodził na zero dni Wolne).
+function absenceDaysInMonth(emp, monthISO){
+  let count = 0;
+  getMonthDayRefs(monthISO).forEach(({ ws, dayIdx }) => {
+    const wk = state.weeks[ws];
+    const reason = wk && wk.absences[emp.id] && wk.absences[emp.id][dayIdx];
+    if(reason !== 'A' && reason !== 'U') return;
+    // A day that's already closed (niedziela niehandlowa / święto) was never
+    // part of nominalWorkDaysInMonth's count to begin with - counting the
+    // urlop/prośba there too would double-subtract it and hand out one extra
+    // "Wolne" day beyond what's actually due for the month.
+    const date = weekDates(ws)[dayIdx];
+    if(isDayClosed(date)) return;
+    count++;
+  });
+  return count;
+}
+function effectiveQuotaFor(emp){
+  return Math.max(0, monthlyQuotaFor(emp) - absenceDaysInMonth(emp, state.monthISO));
+}
+
+function autoGenerateWeek(weekStartISO, options){
+  const skipM = !!(options && options.skipM);
+  const w = ensureWeek(weekStartISO);
+  const emps = sortedEmployees();
+  const closedDays = weekDates(weekStartISO).map(isDayClosed);
+
+  // Boundary weeks (first/last week of the visible month) can spill into the
+  // adjacent month. Generation must only ever touch/count days that actually
+  // fall within the currently displayed month (1st..last day) - the spilled
+  // days belong to that other month's own "Generuj" run.
+  const dayRefsByWeek = {};
+  getMonthDayRefs(state.monthISO).forEach(({ ws, dayIdx }) => {
+    (dayRefsByWeek[ws] || (dayRefsByWeek[ws] = new Set())).add(dayIdx);
+  });
+  const inMonthDay = (ws, d) => !!(dayRefsByWeek[ws] && dayRefsByWeek[ws].has(d));
+  const inMonth = d => inMonthDay(weekStartISO, d);
+
+  // Reset schedule respecting absences, closed days (Sundays without trading
+  // permission, public holidays) and any shift the user already assigned by
+  // hand (clicking a cell) - those are treated as fixed pins and survive
+  // regeneration instead of being wiped and re-rolled every time. Świadomie
+  // kliknięte Wolne/prośba/urlop (cell.locked) też zostaje nietknięte - tylko
+  // dni, które nigdy nie zostały świadomie zdecydowane, są traktowane jako
+  // otwarte do wypełnienia. '_' is an internal sentinel meaning "not yet
+  // decided" - distinct from 'W' (day off) so the fill step below doesn't
+  // confuse an actual day-off request with an open slot to staff. Days
+  // outside the displayed month are left completely untouched - they're
+  // owned by the adjacent month's own generation.
+  emps.forEach(emp => {
+    w.schedule[emp.id] = Array.from({length:7}, (_, d) => {
+      if(!inMonth(d)) return w.schedule[emp.id][d];
+      if(closedDays[d]) return { type: 'Z', offset:0 };
+      if(d === 5 && isFullWeekUrlopSaturday(w, emp.id)) return { type: 'W', offset:0, locked:true };
+      const abs = w.absences[emp.id][d];
+      if(abs) return { type: abs, offset:0 };
+      const existing = w.schedule[emp.id][d];
+      if(existing && isWorkShiftType(existing.type)) return existing;
+      if(existing && existing.locked) return existing;
+      return { type: '_', offset:0 };
+    });
+  });
+
+  // Zamiast sztywno liczyć limit dni pracy per kalendarzowy tydzień (co
+  // psuje się na tygodniach zachodzących na sąsiedni miesiąc), liczymy
+  // miesięczną pulę dni pracy (effectiveQuotaFor - pełny wymiar pomniejszony
+  // o już wpisany urlop/prośbę) i rozliczamy ją narastająco tydzień po
+  // tygodniu w obrębie miesiąca - zostawiając wciąż twardy tygodniowy sufit
+  // (weeklyCeiling), żeby nikt nie pracował 7/7 nawet gdyby budżet miesięczny
+  // na to pozwalał.
+  const monthlyQuota = effectiveQuotaFor;
+  const weeklyCeiling = 6;
+  const monthWeeksList = getMonthWeeks(state.monthISO);
+  const weeksRemainingIncludingThis = Math.max(1, monthWeeksList.length - monthWeeksList.indexOf(weekStartISO));
+  const workDaysBeforeWeek = (emp, uptoWeekStartISO) => {
+    let count = 0;
+    getMonthWeeks(state.monthISO).forEach(ws => {
+      if(ws >= uptoWeekStartISO) return; // strictly earlier weeks only
+      const wk = state.weeks[ws];
+      if(!wk || !wk.schedule[emp.id]) return;
+      wk.schedule[emp.id].forEach((c, d) => { if(inMonthDay(ws, d) && isWorkShiftType(c.type)) count++; });
+    });
+    return count;
+  };
+  // Cap this week's share to remaining-budget ÷ remaining-weeks, not the
+  // flat weekly ceiling - otherwise early weeks greedily use up to 6 days
+  // each, exhausting everyone's monthly quota by week 3-4 and leaving the
+  // rest of the month understaffed. Spreading it evenly means shortages (if
+  // any, once the team is genuinely short-staffed) show up throughout the
+  // whole month instead of collapsing onto the final week(s).
+  const maxDaysFor = emp => {
+    const remaining = monthlyQuota(emp) - workDaysBeforeWeek(emp, weekStartISO);
+    const fairShareThisWeek = Math.ceil(remaining / weeksRemainingIncludingThis);
+    return Math.max(0, Math.min(weeklyCeiling, fairShareThisWeek));
+  };
+  // Suma dni pracy w CAŁYM miesiącu (nie tylko w bieżącym tygodniu) - twardy,
+  // globalny strażnik oprócz tygodniowego maxDaysFor, używany wszędzie, gdzie
+  // rozważamy przekroczenie "sprawiedliwego" tygodniowego limitu.
+  const totalWorkedThisMonth = emp => getMonthWeeks(state.monthISO).reduce((sum, ws2) => {
+    const wk2 = state.weeks[ws2];
+    if(!wk2 || !wk2.schedule[emp.id]) return sum;
+    return sum + wk2.schedule[emp.id].reduce((s, c, dd) => s + (inMonthDay(ws2, dd) && isWorkShiftType(c.type) ? 1 : 0), 0);
+  }, 0);
+
+  // Step 1: block-rotation employees work one shift type for the week, but
+  // still stop at maxDaysFor (the remaining monthly budget, capped weekly)
+  // so they keep their days off - the remaining slots for that week become
+  // a regular day off.
+  emps.forEach(emp => {
+    if(emp.blockRotation && state.settings.blockRuleAll && !isAgencyWorker(emp) && !isOtherStoreWorker(emp)){
+      const weekType = blockTypeForWeek(emp, weekStartISO);
+      const cap = maxDaysFor(emp);
+      let assignedCount = w.schedule[emp.id].filter((c, d) => inMonth(d) && isWorkShiftType(c.type)).length;
+      for(let d=0; d<7; d++){
+        if(!inMonth(d)) continue;
+        if(w.schedule[emp.id][d].type !== '_') continue;
+        if(assignedCount >= cap){
+          w.schedule[emp.id][d] = { type: 'W', offset: 0 };
+          continue;
+        }
+        // If the new block would start with less than 11h rest after last
+        // week's shift (Popołudnie ending Sunday -> Rano starting Monday),
+        // Monday becomes a buffer day off instead, so the block effectively
+        // starts on Tuesday.
+        if(d === 0 && !restOkBetween(adjacentDayCell(w, weekStartISO, emp, 0, -1), { type: weekType, offset: 0 })){
+          w.schedule[emp.id][d] = { type: 'W', offset: 0 };
+        } else {
+          w.schedule[emp.id][d] = { type: weekType, offset: 0 };
+          assignedCount++;
+        }
+      }
+    }
+  });
+
+  // Step 2: figure out remaining flexible pool and fill day by day. Agencja
+  // pracy tymczasowej i pracownik z innego sklepu to doraźna pomoc, NIE część
+  // podstawowej obsady - własną załogą wypełniamy grafik w pierwszej
+  // kolejności. Pracownika z innego sklepu dostawiamy dopiero na końcu, na dni
+  // z niedoborem, osobnym krokiem (fillShortagesWithOtherStore).
+  const flexible = emps.filter(emp => !(emp.blockRotation && state.settings.blockRuleAll) && !isAgencyWorker(emp) && !isOtherStoreWorker(emp));
+
+  // Track assigned day count per employee to cap by the weekly fair-share
+  // (maxDaysFor) and keep the required days off. Starts from days already
+  // pinned (manually assigned or kept from a previous generation), not from
+  // zero, so the cap still holds after a regeneration.
+  const assignedDays = {};
+  flexible.forEach(emp => {
+    assignedDays[emp.id] = w.schedule[emp.id].filter((c, d) => inMonth(d) && isWorkShiftType(c.type)).length;
+  });
+
+  for(let d=0; d<7; d++){
+    if(closedDays[d]) continue;
+    if(!inMonth(d)) continue;
+    const needR = w.targets[d].r;
+    const needP = w.targets[d].p;
+    const needM = state.settings.miedzyEnabled ? w.targets[d].m : 0;
+
+    // candidates: flexible, currently 'W' (not absence), under day cap.
+    // Pracownik z innego sklepu wymaga, żeby na tej samej zmianie był już
+    // (lub właśnie zostanie) Zastępca/Kierownik prowadzący - chyba że sam
+    // jest kierownikiem/zastępcą/funkcyjnym z tamtego sklepu, w którym
+    // przypadku sam pełni tę rolę i można go swobodnie łączyć ze zwykłym
+    // pracownikiem sklepu.
+    // relaxWeeklyCap: pomija "sprawiedliwy" tygodniowy limit (maxDaysFor) i
+    // pozwala dojść aż do twardego tygodniowego sufitu (weeklyCeiling) - używane
+    // tylko jako druga próba dla Rano/Popołudnie, gdy równy rozkład zostawiłby
+    // dzień poniżej wymaganej obsady. Miesięczny wymiar (totalWorkedThisMonth)
+    // i reguła 11h odpoczynku obowiązują zawsze, bez wyjątku.
+    const available = (type, relaxWeeklyCap) => flexible.filter(emp => {
+      const cell = w.schedule[emp.id][d];
+      if(cell.type !== '_') return false;
+      const weeklyCap = relaxWeeklyCap ? weeklyCeiling : maxDaysFor(emp);
+      if(assignedDays[emp.id] >= weeklyCap) return false;
+      if(totalWorkedThisMonth(emp) >= monthlyQuota(emp)) return false;
+      if(isOtherStoreWorker(emp) && !isSupervisorRole(emp) && !shiftHasLead(w, d, type, emps)) return false;
+      return true;
+    });
+
+    // How many shifts of this exact type `emp` already has this month (weeks
+    // up to and including the one being generated now) - used to spread each
+    // shift type evenly per person (e.g. as many Popołudnie as Rano), rather
+    // than just balancing total days worked.
+    const typeCountSoFar = (emp, type) => {
+      let count = 0;
+      getMonthWeeks(state.monthISO).forEach(ws => {
+        if(ws > weekStartISO) return;
+        const wk = ws === weekStartISO ? w : state.weeks[ws];
+        if(!wk || !wk.schedule[emp.id]) return;
+        wk.schedule[emp.id].forEach((c, dd) => { if(inMonthDay(ws, dd) && c.type === type) count++; });
+      });
+      return count;
+    };
+
+    // For Rano/Popołudnie, prefer whoever is most "behind" on that type
+    // relative to their own count of the other one, so each person ends up
+    // with roughly as many Popołudnie as Rano over the month - not just an
+    // even split of each type across the team. M/N fall back to plain
+    // per-type fairness across peers.
+    const balanceKey = (emp, type) => {
+      if(type === 'R') return typeCountSoFar(emp, 'R') - typeCountSoFar(emp, 'P');
+      if(type === 'P') return typeCountSoFar(emp, 'P') - typeCountSoFar(emp, 'R');
+      return typeCountSoFar(emp, type);
+    };
+
+    // Sort candidates FIRST by who's most behind on total workdays so far
+    // this month - inaczej dwóch zamiennych kierowników/zastępców (obaj
+    // spełniają wymóg składu) potrafi się nierówno rozłożyć: ten, kto akurat
+    // częściej "wystarczał" do składu, zgarnia więcej dni, a drugi zostaje
+    // notorycznie pomijany, mimo że ma mniej przepracowanych dni i wolny
+    // budżet do wymiaru. Potem balance key (R vs P), potem dni w tym tygodniu.
+    // roleFilter lets the composition rule below reach for a supervisor or a
+    // worker specifically before falling back to anyone available.
+    // Rozbieżność między liczbą Rano a Popołudnie u JEDNEJ osoby nie powinna
+    // przekraczać 3 dni w miesiącu - preferowany filtr, z zapasowym trybem
+    // bez limitu, gdyby nikt inny nie był dostępny (obsada ważniejsza niż
+    // balans, ale tylko w ostateczności).
+    const withinRPBalance = (emp, type) => {
+      if(type !== 'R' && type !== 'P') return true;
+      const other = type === 'R' ? 'P' : 'R';
+      const mine = typeCountSoFar(emp, type) + 1;
+      const theirs = typeCountSoFar(emp, other);
+      return Math.abs(mine - theirs) <= 3;
+    };
+    const pick = (type, roleFilter, relaxWeeklyCap) => {
+      // Sprawdzamy regułę 11h odpoczynku względem OBU sąsiednich dni, nie
+      // tylko poprzedniego. Dzień poprzedzający wystarcza przy zwykłym
+      // wypełnianiu dzień-po-dniu (następny jeszcze nie istnieje), ALE jeśli
+      // czyjś wcześniejszy dzień został pominięty w pierwszym przebiegu
+      // (został '_') i dostaje typ dopiero w drugim przebiegu (skipM:false),
+      // dzień PO NIM mógł już być ustalony wcześniej - bez tego sprawdzenia
+      // dało się dostawić np. Popołudnie dzień przed już ustalonym Rano.
+      let pool = available(type, relaxWeeklyCap).filter(emp => {
+        const prevOk = restOkBetween(adjacentDayCell(w, weekStartISO, emp, d, -1), { type, offset: 0 });
+        const nextOk = restOkBetween({ type, offset: 0 }, adjacentDayCell(w, weekStartISO, emp, d, 1));
+        return prevOk && nextOk;
+      });
+      if(roleFilter) pool = pool.filter(roleFilter);
+      const balanced = pool.filter(emp => withinRPBalance(emp, type));
+      if(balanced.length > 0) pool = balanced;
+      pool = pool.sort((a,b) => {
+        const byTotal = totalWorkedThisMonth(a) - totalWorkedThisMonth(b);
+        if(byTotal !== 0) return byTotal;
+        const byType = balanceKey(a, type) - balanceKey(b, type);
+        if(byType !== 0) return byType;
+        return assignedDays[a.id] - assignedDays[b.id];
+      });
+      if(pool.length === 0) return false;
+      const emp = pool[0];
+      w.schedule[emp.id][d] = { type, offset:0 };
+      assignedDays[emp.id]++;
+      return true;
+    };
+
+    // Every shift with 2+ people needs at least one kierownik/zastępca/
+    // funkcyjny (patrz [[grafik_pracy_obsada_reguly]]) - nie ma znaczenia,
+    // kim jest druga (i kolejne) osoba: zastępca, funkcyjny czy pracownik
+    // sklepu - byle na zmianie był ktokolwiek z roli kierowniczej/funkcyjnej.
+    // Jeśli nikt odpowiedni nie jest już dostępny (np. wszyscy kierownicy/
+    // zastępcy/funkcyjni poszli na Rano/Popołudnie), NIE dobieramy losowo
+    // kogokolwiek innego - lepiej zostawić zmianę częściowo obsadzoną niż
+    // złamać regułę składu.
+    const fillType = (type, need) => {
+      let have = emps.filter(e => w.schedule[e.id][d].type === type).length;
+      while(have < need){
+        const comp = shiftComposition(w, d, type, emps);
+        const needsSupervisor = need >= 2 && !comp.hasSupervisor;
+        let filled = needsSupervisor ? pick(type, isSupervisorRole) : pick(type);
+        // Rano/Popołudnie mają pierwszeństwo przed równym tygodniowym
+        // rozkładem obciążenia - jeśli "sprawiedliwy" limit (maxDaysFor)
+        // zostawiłby ten dzień poniżej wymaganej obsady, spróbuj jeszcze raz
+        // dopuszczając przekroczenie go, aż do twardego sufitu 6 dni/tydzień
+        // i miesięcznego wymiaru (Między nigdy nie dostaje tej drugiej szansy
+        // - zostaje w pełni podporządkowane Rano/Popołudniu).
+        if(!filled && (type === 'R' || type === 'P')){
+          filled = needsSupervisor ? pick(type, isSupervisorRole, true) : pick(type, null, true);
+        }
+        if(!filled) break;
+        have++;
+      }
+    };
+
+    // Decide whether to resolve Rano or Popołudnie first today. Filling R
+    // before P every single day would let a scarce worker/supervisor always
+    // get claimed by R's composition requirement first, permanently starving
+    // them of Popołudnie even though the balance logic inside pick() wants
+    // to give it to them - so flip the order on days where the flexible pool
+    // is collectively ahead on R, letting P claim the scarce candidate first.
+    // Summing the balance across the *whole* flexible pool self-cancels when
+    // one scarce worker is stuck on Rano while supervisors soak up the slack
+    // on Popołudnie (their surplus offsets her deficit, net stays ~0 and the
+    // order never flips). Basing it on worker-role candidates specifically -
+    // the role composition most often has just one of - actually catches that.
+    const workerFlexible = flexible.filter(isWorkerRole);
+    const balanceSource = workerFlexible.length > 0 ? workerFlexible : flexible;
+    const flexibleBalanceR = balanceSource.reduce((sum, e) => sum + (typeCountSoFar(e, 'R') - typeCountSoFar(e, 'P')), 0);
+    if(flexibleBalanceR > 0){
+      fillType('P', needP);
+      fillType('R', needR);
+    } else {
+      fillType('R', needR);
+      fillType('P', needP);
+    }
+    // Między dokładamy TYLKO gdy TEGO dnia Rano i Popołudnie osiągnęły już
+    // wymaganą obsadę - podstawowe zmiany mają bezwzględne pierwszeństwo,
+    // każdego dnia z osobna. Jeśli danego dnia brakuje na Rano/Popołudnie,
+    // Między w ogóle nie jest tu obsadzane (a ewentualną już wstawioną Między
+    // z innego dnia przeniesie później reassignMiedzyToCoverShortage).
+    const rMet = emps.filter(e => w.schedule[e.id][d].type === 'R').length >= needR;
+    const pMet = emps.filter(e => w.schedule[e.id][d].type === 'P').length >= needP;
+    if(!skipM && rMet && pMet) fillType('M', needM);
+  }
+
+  // Step 3: mimo relaksu w kroku 2 dzień może nadal mieć niedobór Rano/
+  // Popołudnia, jeśli winnym jest pracownik BLOKOWY - jego "sprawiedliwy"
+  // tygodniowy limit (maxDaysFor) zatrzymał go wcześniej niż potrzeba, a
+  // pracownicy blokowi nie należą do puli elastycznej z kroku 2, więc relaks
+  // stamtąd ich nie obejmuje. Dokładamy im dodatkowy dzień w ICH WŁASNYM typie
+  // bloku (nigdy przeciwnym), aż do twardego tygodniowego sufitu i
+  // miesięcznego wymiaru - Rano/Popołudnie ważniejsze niż równy rozkład.
+  emps.forEach(emp => {
+    if(!(emp.blockRotation && state.settings.blockRuleAll) || isAgencyWorker(emp) || isOtherStoreWorker(emp)) return;
+    const weekType = blockTypeForWeek(emp, weekStartISO);
+    for(let d=0; d<7; d++){
+      if(closedDays[d] || !inMonth(d)) continue;
+      if(w.schedule[emp.id][d].type !== 'W' || w.schedule[emp.id][d].locked) continue; // tylko zwykłe, nie świadomie ustawione wolne
+      const need = weekType === 'R' ? w.targets[d].r : w.targets[d].p;
+      const have = emps.reduce((acc, e) => acc + (w.schedule[e.id][d].type === weekType ? 1 : 0), 0);
+      if(have >= need) continue; // ten dzień już ma komplet tego typu
+      // Tak jak w fillType: jeśli to przypisanie domknęłoby zmianę do targetu,
+      // musi być na niej ktokolwiek z roli kierowniczej/funkcyjnej - inaczej
+      // pomijamy tego kandydata dla tego dnia.
+      if(need >= 2 && have + 1 >= need){
+        const comp = shiftComposition(w, d, weekType, emps);
+        const supervisorOk = comp.hasSupervisor || isSupervisorRole(emp);
+        if(!supervisorOk) continue;
+      }
+      const assignedCount = w.schedule[emp.id].filter((c, dd) => inMonth(dd) && isWorkShiftType(c.type)).length;
+      if(assignedCount >= weeklyCeiling) continue;
+      if(totalWorkedThisMonth(emp) >= monthlyQuota(emp)) continue;
+      const prevCell = adjacentDayCell(w, weekStartISO, emp, d, -1);
+      const nextCell = adjacentDayCell(w, weekStartISO, emp, d, 1);
+      const candCell = { type: weekType, offset: 0 };
+      const prevOk = !prevCell || restOkBetween(prevCell, candCell);
+      const nextOk = !nextCell || restOkBetween(candCell, nextCell);
+      if(!prevOk || !nextOk) continue;
+      w.schedule[emp.id][d] = { type: weekType, offset: 0 };
+    }
+  });
+
+  // Any slot left undecided becomes a regular day off.
+  emps.forEach(emp => {
+    for(let d=0; d<7; d++){
+      if(w.schedule[emp.id][d].type === '_') w.schedule[emp.id][d] = { type:'W', offset:0 };
+    }
+  });
+
+  save();
+}
+
+// Rano/Popołudnie to podstawowa obsada - Między jest dodatkiem. Jeśli po
+// wygenerowaniu (albo po ręcznych zmianach) danego dnia brakuje ludzi do
+// wymaganej liczby na Rano lub Popołudnie, próbujemy to naprawić dwoma
+// sposobami, w kolejności:
+//  1) ktoś jest na Między DOKŁADNIE tego samego dnia - ściągamy go stamtąd,
+//  2) nikogo nie ma na Między tego dnia, ale ktoś ma Między w INNY dzień
+//     miesiąca i akurat tego (brakującego) dnia jest wolny - podmieniamy mu
+//     tamtą między-zmianę na brakującą zmianę tutaj (tamten dzień staje się
+//     zwykłym Wolne).
+// W obu przypadkach obowiązuje reguła 11h odpoczynku względem sąsiednich dni
+// brakującej zmiany. Priorytet wyboru: najpierw kandydat, którego rola
+// uzupełnia brakujący skład (kierownik/zastępca/funkcyjny + pracownik
+// sklepu), potem pierwszy dostępny; kandydaci "z tego samego dnia" mają
+// pierwszeństwo przed "z innego dnia" (mniej ingerencji w grafik).
+function reassignMiedzyToCoverShortage(){
+  const weeks = getMonthWeeks(state.monthISO);
+  const emps = sortedEmployees();
+
+  const dayRefsByWeek = {};
+  getMonthDayRefs(state.monthISO).forEach(({ ws, dayIdx }) => {
+    (dayRefsByWeek[ws] || (dayRefsByWeek[ws] = new Set())).add(dayIdx);
+  });
+
+  const canMoveTo = (wk, ws, emp, d, type) => {
+    const prevCell = adjacentDayCell(wk, ws, emp, d, -1);
+    const nextCell = adjacentDayCell(wk, ws, emp, d, 1);
+    const candCell = { type, offset: 0 };
+    const prevOk = !prevCell || restOkBetween(prevCell, candCell);
+    const nextOk = !nextCell || restOkBetween(candCell, nextCell);
+    return prevOk && nextOk;
+  };
+
+  weeks.forEach(ws => {
+    const wk = ensureWeek(ws);
+    const idxs = dayRefsByWeek[ws];
+    if(!idxs) return;
+    idxs.forEach(d => {
+      ['R', 'P'].forEach(type => {
+        const target = type === 'R' ? wk.targets[d].r : wk.targets[d].p;
+        const haveCount = () => emps.reduce((acc, e) => acc + (wk.schedule[e.id][d].type === type ? 1 : 0), 0);
+
+        while(haveCount() < target){
+          const sameDay = emps
+            .filter(e => wk.schedule[e.id][d].type === 'M' && canMoveTo(wk, ws, e, d, type))
+            .map(e => ({ emp: e, sourceWs: ws, sourceD: d }));
+
+          const crossDay = [];
+          if(sameDay.length === 0){
+            weeks.forEach(ws2 => {
+              const wk2 = ensureWeek(ws2);
+              const idxs2 = dayRefsByWeek[ws2];
+              if(!idxs2) return;
+              idxs2.forEach(d2 => {
+                if(ws2 === ws && d2 === d) return;
+                emps.forEach(e => {
+                  if(wk2.schedule[e.id][d2].type !== 'M') return; // musi mieć Między tam
+                  if(wk.schedule[e.id][d].type !== 'W' || wk.schedule[e.id][d].locked) return; // i być wolny tutaj (nie świadomie ustawiony)
+                  if(!canMoveTo(wk, ws, e, d, type)) return;
+                  crossDay.push({ emp: e, sourceWs: ws2, sourceD: d2 });
+                });
+              });
+            });
+          }
+
+          const candidates = sameDay.length ? sameDay : crossDay;
+          if(candidates.length === 0) break; // nikogo nie da się bezpiecznie podmienić
+
+          // Tak jak w fillType: jeśli brakuje kierownika/zastępcy/funkcyjnego,
+          // a wśród kandydatów nie ma nikogo z tą rolą, NIE dobieramy losowo
+          // kogokolwiek innego - to utrwaliłoby zły skład (zmianę bez nikogo
+          // kierowniczego). Drugą (i kolejne) osobą może być ktokolwiek.
+          const comp = shiftComposition(wk, d, type, emps);
+          const needsSupervisor = target >= 2 && !comp.hasSupervisor;
+          const chosen = needsSupervisor ? candidates.find(c => isSupervisorRole(c.emp)) : candidates[0];
+          if(!chosen) break;
+
+          const sourceWk = ensureWeek(chosen.sourceWs);
+          sourceWk.schedule[chosen.emp.id][chosen.sourceD] = { type: 'W', offset: 0 };
+          wk.schedule[chosen.emp.id][d] = { type, offset: 0 };
+        }
+      });
+    });
+  });
+  save();
+}
+
+// GWARANCJA MINIMALNEJ OBSADY: minimum na Rano/Popołudnie (i Między) ma być
+// spełnione KAŻDEGO dnia bez wyjątku. Jeśli po wszystkich krokach jakiś dzień
+// nadal ma za mało ludzi, przenosimy kogoś z dnia, gdzie jest NADWYŻKA ponad
+// minimum, na ten brakujący dzień - ta sama osoba, inny dzień, więc jej liczba
+// dni pracy (etat) się NIE zmienia (dzień wolny tylko wędruje na inną datę).
+// Poprawny skład (kierownik/zastępca/funkcyjny + pracownik sklepu) staramy się
+// zachować, ale headcount minimum ma pierwszeństwo - gdy brakuje właściwej
+// roli, dokładamy kogokolwiek dostępnego (to użytkownik potem ewentualnie
+// koryguje ręcznie). Nie ruszamy dni świadomie zablokowanych (locked) ani
+// urlopu/prośby/zamknięcia - tylko zwykłe Wolne.
+function rebalanceToMeetMinimum(){
+  const weeks = getMonthWeeks(state.monthISO);
+  const allEmps = sortedEmployees().filter(e => !isAgencyWorker(e) && !isOtherStoreWorker(e));
+  const dayRefsByWeek = {};
+  getMonthDayRefs(state.monthISO).forEach(({ ws, dayIdx }) => {
+    (dayRefsByWeek[ws] || (dayRefsByWeek[ws] = new Set())).add(dayIdx);
+  });
+
+  const cnt = (wk, d, type) => allEmps.reduce((a,e)=> a + (wk.schedule[e.id][d].type===type?1:0), 0);
+  const minFor = (wk, d, type) => type==='R' ? wk.targets[d].r : type==='P' ? wk.targets[d].p : (state.settings.miedzyEnabled ? wk.targets[d].m : 0);
+
+  const canTake = (wk, ws, emp, d, type) => {
+    const prev = adjacentDayCell(wk, ws, emp, d, -1);
+    const next = adjacentDayCell(wk, ws, emp, d, 1);
+    const cand = { type, offset: 0 };
+    return (!prev || restOkBetween(prev, cand)) && (!next || restOkBetween(cand, next));
+  };
+
+  // Oddać `emp` ze zmiany (sD,sType) można, jeśli po zabraniu ta zmiana nadal
+  // ma co najmniej minimalną obsadę (headcount). Skład zmiany-źródła NIE jest
+  // tu twardym warunkiem - minimum headcount każdego dnia jest ważniejsze niż
+  // skład (użytkownik koryguje skład ręcznie). Dni świadomie zablokowane
+  // (locked) i urlop/prośba/zamknięcie zostają nietknięte - tylko zwykłe Wolne.
+  const canRemoveFrom = (wk2, sD, sType, emp) => cnt(wk2, sD, sType) > minFor(wk2, sD, sType);
+
+  weeks.forEach(ws => {
+    const wk = ensureWeek(ws);
+    const idxs = dayRefsByWeek[ws];
+    if(!idxs) return;
+    idxs.forEach(d => {
+      ['R','P','M'].forEach(type => {
+        let guard = 0;
+        while(cnt(wk, d, type) < minFor(wk, d, type) && guard++ < 50){
+          const comp = shiftComposition(wk, d, type, allEmps);
+          const needsSup = !comp.hasSupervisor;
+          let anyMove = null, improvingMove = null;
+          for(const emp of allEmps){
+            // Pracowników blokowych nie ruszamy - mają sztywny tygodniowy
+            // wzorzec (tydzień rano / tydzień popołudnie), a przenoszenie ich
+            // psułoby ten wzorzec i idempotencję generowania.
+            if(emp.blockRotation && state.settings.blockRuleAll) continue;
+            const here = wk.schedule[emp.id][d];
+            if(here.type !== 'W' || here.locked) continue;
+            if(!canTake(wk, ws, emp, d, type)) continue;
+            let donor = null;
+            for(const ws2 of weeks){
+              const wk2 = ensureWeek(ws2);
+              const idxs2 = dayRefsByWeek[ws2];
+              if(!idxs2) continue;
+              for(const d2 of idxs2){
+                if(ws2===ws && d2===d) continue;
+                const sType = wk2.schedule[emp.id][d2].type;
+                if(sType!=='R' && sType!=='P' && sType!=='M') continue;
+                if(!canRemoveFrom(wk2, d2, sType, emp)) continue;
+                donor = { wk2, d2 };
+                break;
+              }
+              if(donor) break;
+            }
+            if(!donor) continue;
+            // Preferuj kandydata, który dołoży brakującego kierownika/
+            // zastępcę/funkcyjnego; w ostateczności ktokolwiek, byle osiągnąć
+            // minimum headcount.
+            const improves = needsSup && isSupervisorRole(emp);
+            if(improves){ improvingMove = { emp, donor }; break; }
+            if(!anyMove) anyMove = { emp, donor };
+          }
+          const move = improvingMove || anyMove;
+          if(!move) break; // naprawdę nie da się pokryć (brak wolnych / reguła 11h / etat)
+          move.donor.wk2.schedule[move.emp.id][move.donor.d2] = { type:'W', offset:0 };
+          wk.schedule[move.emp.id][d] = { type, offset:0 };
+        }
+      });
+    });
+  });
+  save();
+}
+
+// Doraźna pomoc z innego sklepu: jeśli po wykorzystaniu WŁASNEJ załogi jakiś
+// dzień nadal ma niedobór na Rano/Popołudnie, dostawiamy pracownika z innego
+// sklepu - ale tylko na zmianie, na której jest już prowadzący (Kierownik/
+// Zastępca), z zachowaniem reguły 11h odpoczynku, sufitu 6 dni/tydzień oraz
+// jego własnego miesięcznego limitu dni (emp.monthDays - puste = bez limitu).
+// To druga kolejność - własny sklep zawsze pierwszy.
+function fillShortagesWithOtherStore(){
+  const weeks = getMonthWeeks(state.monthISO);
+  const all = sortedEmployees();
+  const others = all.filter(isOtherStoreWorker);
+  if(others.length === 0) return;
+
+  const dayRefsByWeek = {};
+  getMonthDayRefs(state.monthISO).forEach(({ ws, dayIdx }) => {
+    (dayRefsByWeek[ws] || (dayRefsByWeek[ws] = new Set())).add(dayIdx);
+  });
+  const inMonthDay = (ws, d) => !!(dayRefsByWeek[ws] && dayRefsByWeek[ws].has(d));
+  const cnt = (wk, d, type) => all.reduce((a,e)=> a + (wk.schedule[e.id][d].type===type?1:0), 0);
+  const minFor = (wk, d, type) => type==='R' ? wk.targets[d].r : wk.targets[d].p;
+  const canTake = (wk, ws, emp, d, type) => {
+    const prev = adjacentDayCell(wk, ws, emp, d, -1);
+    const next = adjacentDayCell(wk, ws, emp, d, 1);
+    const cand = { type, offset: 0 };
+    return (!prev || restOkBetween(prev, cand)) && (!next || restOkBetween(cand, next));
+  };
+  const monthWorkCount = emp => weeks.reduce((sum, ws2) => {
+    const wk2 = ensureWeek(ws2);
+    const idxs2 = dayRefsByWeek[ws2];
+    if(!idxs2) return sum;
+    let c = 0;
+    idxs2.forEach(d2 => { if(isWorkShiftType(wk2.schedule[emp.id][d2].type)) c++; });
+    return sum + c;
+  }, 0);
+
+  weeks.forEach(ws => {
+    const wk = ensureWeek(ws);
+    const idxs = dayRefsByWeek[ws];
+    if(!idxs) return;
+    idxs.forEach(d => {
+      ['R','P'].forEach(type => {
+        let guard = 0;
+        while(cnt(wk, d, type) < minFor(wk, d, type) && guard++ < 20){
+          const leadHere = all.some(e => isLeadRole(e) && wk.schedule[e.id][d].type === type);
+          if(!leadHere) break; // pracownik z innego sklepu tylko przy prowadzącym
+          const cand = others.find(o => {
+            const here = wk.schedule[o.id][d];
+            if(here.type !== 'W' || here.locked) return false;
+            const weekWork = wk.schedule[o.id].filter((c,dd)=> inMonthDay(ws,dd) && isWorkShiftType(c.type)).length;
+            if(weekWork >= 6) return false;
+            if(o.monthDays && monthWorkCount(o) >= o.monthDays) return false;
+            return canTake(wk, ws, o, d, type);
+          });
+          if(!cand) break;
+          wk.schedule[cand.id][d] = { type, offset: 0 };
+        }
+      });
+    });
+  });
+  save();
+}
+
+// Gdy nadwyżka ponad minimum jest nieunikniona (wszyscy w etacie, a dzień ma
+// więcej ludzi niż minimum), kierujemy ją na POPOŁUDNIE, nie na Rano - czyli
+// wolimy 2/3 niż 3/2. Przenosimy nadmiarowe osoby z Rano na Popołudnie TEGO
+// SAMEGO dnia (etat bez zmian), dopóki Rano jest ponad minimum, o ile:
+//  - Rano po zabraniu zostaje z prowadzącym (nie zdejmujemy ostatniego
+//    kierownika/zastępcy/funkcyjnego),
+//  - reguła 11h odpoczynku względem sąsiednich dni jest zachowana,
+//  - różnica Rano/Popołudnie u tej osoby nie przekroczy 3 dni,
+//  - to nie pracownik blokowy (sztywny wzorzec) ani dzień zablokowany ręcznie.
+function preferAfternoonForSurplus(){
+  const weeks = getMonthWeeks(state.monthISO);
+  const all = sortedEmployees();
+  const dayRefsByWeek = {};
+  getMonthDayRefs(state.monthISO).forEach(({ ws, dayIdx }) => {
+    (dayRefsByWeek[ws] || (dayRefsByWeek[ws] = new Set())).add(dayIdx);
+  });
+  const inMonthDay = (ws, d) => !!(dayRefsByWeek[ws] && dayRefsByWeek[ws].has(d));
+  const cntType = (wk, d, type) => all.reduce((a,e)=> a + (wk.schedule[e.id][d].type===type?1:0), 0);
+  const monthType = (emp, type) => weeks.reduce((s, ws) => s + (state.weeks[ws].schedule[emp.id]?.reduce((a,c,dd)=> a + (inMonthDay(ws,dd) && c.type===type?1:0), 0) || 0), 0);
+
+  weeks.forEach(ws => {
+    const wk = ensureWeek(ws);
+    const idxs = dayRefsByWeek[ws];
+    if(!idxs) return;
+    idxs.forEach(d => {
+      let guard = 0;
+      while(cntType(wk, d, 'R') > wk.targets[d].r && guard++ < 20){
+        const cand = all.find(e => {
+          const here = wk.schedule[e.id][d];
+          if(here.type !== 'R' || here.locked) return false;
+          if(e.blockRotation && state.settings.blockRuleAll) return false;
+          // Rano musi zostać z co najmniej jednym prowadzącym składu.
+          const rAfter = all.filter(x => x.id!==e.id && wk.schedule[x.id][d].type==='R');
+          if(!rAfter.some(isSupervisorRole)) return false;
+          // Balans R/P <= 3 po przeniesieniu.
+          if(monthType(e,'P') - monthType(e,'R') > 1) return false;
+          // Reguła 11h odpoczynku dla nowej zmiany P.
+          const prev = adjacentDayCell(wk, ws, e, d, -1);
+          const next = adjacentDayCell(wk, ws, e, d, 1);
+          const candCell = { type:'P', offset:0 };
+          if((prev && !restOkBetween(prev, candCell)) || (next && !restOkBetween(candCell, next))) return false;
+          // Pracownik z innego sklepu tylko przy prowadzącym na Popołudniu.
+          if(isOtherStoreWorker(e) && !all.some(x => isLeadRole(x) && wk.schedule[x.id][d].type==='P')) return false;
+          return true;
+        });
+        if(!cand) break;
+        wk.schedule[cand.id][d] = { type:'P', offset:0 };
+      }
+    });
+  });
+  save();
+}
+
+// Etatowi pracownicy (bez agencji / pomocy z innego sklepu) muszą faktycznie
+// wypracować swój pełny miesięczny limit (etat), nie tylko "co najwyżej
+// tyle". Po normalnym wypełnianiu wg dziennych celów obsady, dokłada im
+// zmiany na pozostałych dniach "Wolne" (nigdy na urlopie/prośbie/zamknięciu),
+// nawet ponad formalny cel danego dnia - z zachowaniem reguły 11h odpoczynku
+// i tygodniowego sufitu 6 dni.
+function topUpToMonthlyQuota(options){
+  const skipM = !!(options && options.skipM);
+  const weeks = getMonthWeeks(state.monthISO);
+  const allEmps = sortedEmployees();
+  const emps = allEmps.filter(emp => !isAgencyWorker(emp) && !isOtherStoreWorker(emp));
+
+  // Boundary weeks can spill into the adjacent month - only count/top-up days
+  // that actually fall within the displayed month (1st..last day).
+  const dayRefsByWeek = {};
+  getMonthDayRefs(state.monthISO).forEach(({ ws, dayIdx }) => {
+    (dayRefsByWeek[ws] || (dayRefsByWeek[ws] = new Set())).add(dayIdx);
+  });
+  const inMonthDay = (ws, d) => !!(dayRefsByWeek[ws] && dayRefsByWeek[ws].has(d));
+
+  const totalOfType = (emp, type) => weeks.reduce((sum, ws) =>
+    sum + (state.weeks[ws].schedule[emp.id]?.reduce((s,c,d) => s + (inMonthDay(ws,d) && c.type === type ? 1 : 0), 0) || 0), 0);
+  const totalWorked = emp => weeks.reduce((sum, ws) =>
+    sum + (state.weeks[ws].schedule[emp.id]?.reduce((s,c,d) => s + (inMonthDay(ws,d) && isWorkShiftType(c.type) ? 1 : 0), 0) || 0), 0);
+  const countFor = (wk, d, type) => allEmps.reduce((acc, e) => acc + (wk.schedule[e.id][d].type === type ? 1 : 0), 0);
+  const targetFor = (wk, d, type) => {
+    if(type === 'R') return wk.targets[d].r;
+    if(type === 'P') return wk.targets[d].p;
+    if(type === 'M') return state.settings.miedzyEnabled ? wk.targets[d].m : 0;
+    return 0;
+  };
+
+  emps.forEach(emp => {
+    const quota = effectiveQuotaFor(emp);
+    let current = totalWorked(emp);
+    if(current >= quota) return;
+
+    // Pracownik w trybie blokowym pracuje w danym tygodniu tylko jeden typ
+    // zmiany (tydzień rano / tydzień popołudnie). Dobijanie do wymiaru nie może
+    // tego łamać, więc dla niego dokładamy wyłącznie jego typ bloku w danym
+    // tygodniu - nigdy przeciwnej zmiany ani między-zmiany.
+    const isBlockEmp = emp.blockRotation && state.settings.blockRuleAll;
+
+    // Rozbieżność Rano vs Popołudnie u tej osoby - preferowany limit 3 dni,
+    // z zapasowym trybem bez limitu w ostateczności (obsada/wymiar ważniejsze
+    // niż balans, gdyby naprawdę nie było innej opcji).
+    const withinRPBalance = (type, strict) => {
+      if(type !== 'R' && type !== 'P') return true;
+      const other = type === 'R' ? 'P' : 'R';
+      const mine = totalOfType(emp, type) + 1;
+      const theirs = totalOfType(emp, other);
+      return !strict || Math.abs(mine - theirs) <= 3;
+    };
+
+    // Minimalna obsada to DOLNA granica, nie limit - dobijamy do wymiaru w
+    // dwóch turach. Tura A: bez przekraczania minimalnej obsady (preferowane,
+    // mniej ingeruje w grafik). Tura B (tylko jeśli po A nadal brakuje dni):
+    // dni wolne muszą się zgadzać z wymiarem czasu pracy, więc pozwalamy
+    // przekroczyć minimalną obsadę, żeby nikomu nie zabrakło dni - nadal z
+    // zachowaniem reguły 11h odpoczynku i tygodniowego sufitu 6 dni.
+    // Kolejność zawsze: Rano/Popołudnie przed Między; Między tylko na dniach,
+    // gdzie Rano i Popołudnie mają już co najmniej minimalną obsadę.
+    //
+    // Kandydackie dni zbieramy z całego miesiąca naraz i sortujemy od
+    // najmniej obsadzonych (patrzymy na miesiąc globalnie, nie kolejno dzień
+    // po dniu) - tak dobitki trafiają tam, gdzie obsada jest najcieńsza,
+    // zamiast piętrzyć się na pierwszych napotkanych dniach.
+    [true, false].forEach(respectTarget => {
+      if(current >= quota) return;
+      const candidates = [];
+      weeks.forEach(ws => {
+        const wk = ensureWeek(ws);
+        for(let d = 0; d < 7; d++){
+          if(!inMonthDay(ws, d)) continue;
+          const cell = wk.schedule[emp.id][d];
+          if(cell.type !== 'W' || cell.locked) continue; // never urlop/prośba/zamknięte, never świadomie ustawione Wolne
+          const weekWorkDays = wk.schedule[emp.id].filter((c, dd) => inMonthDay(ws, dd) && isWorkShiftType(c.type)).length;
+          if(weekWorkDays >= 6) continue; // keep the weekly rest ceiling even during top-up
+          const dayTotal = countFor(wk, d, 'R') + countFor(wk, d, 'P') + countFor(wk, d, 'M');
+          candidates.push({ ws, d, wk, dayTotal });
+        }
+      });
+      candidates.sort((a, b) => a.dayTotal - b.dayTotal);
+
+      for(const { ws, d, wk } of candidates){
+        if(current >= quota) break;
+        const blockType = isBlockEmp ? blockTypeForWeek(emp, ws) : null;
+        const prevCell = adjacentDayCell(wk, ws, emp, d, -1);
+        const nextCell = adjacentDayCell(wk, ws, emp, d, 1);
+        const miedzyOption = skipM ? [] : ['M'];
+        const rpOrder = withinRPBalance('R', true) === withinRPBalance('P', true)
+          ? (totalOfType(emp, 'R') <= totalOfType(emp, 'P') ? ['R', 'P'] : ['P', 'R'])
+          : (withinRPBalance('R', true) ? ['R', 'P'] : ['P', 'R']);
+        // Między tylko gdy tego dnia Rano i Popołudnie mają już co najmniej minimum.
+        const coreMet = countFor(wk, d, 'R') >= targetFor(wk, d, 'R') && countFor(wk, d, 'P') >= targetFor(wk, d, 'P');
+        // Gdy Rano/Popołudnie mają już swoją minimalną obsadę i dobijamy do
+        // wymiaru z dopuszczeniem przekroczenia minimum (respectTarget=false),
+        // nadwyżkę kierujemy na Między zamiast piętrzyć kolejne osoby na Rano
+        // lub Popołudnie ponad to, co faktycznie potrzebne.
+        const preferMiedzyFirst = !respectTarget && coreMet && miedzyOption.length > 0;
+        const preferredOrder = blockType ? [blockType] : (preferMiedzyFirst ? [...miedzyOption, ...rpOrder] : [...rpOrder, ...miedzyOption]);
+        for(const strictRP of [true, false]){
+          let assigned = false;
+          for(const type of preferredOrder){
+            if(type === 'M' && !coreMet) continue;
+            if(!withinRPBalance(type, strictRP)) continue;
+            if(respectTarget && countFor(wk, d, type) >= targetFor(wk, d, type)) continue;
+            // Jeśli to przypisanie domknęłoby zmianę do jej minimalnej obsady
+            // (2+ osoby), sprawdź, czy na zmianie będzie ktokolwiek z roli
+            // kierowniczej/funkcyjnej - inaczej dobijanie do wymiaru mogłoby
+            // utrwalić zmianę bez nikogo kierowniczego.
+            const shiftTarget = targetFor(wk, d, type);
+            if(shiftTarget >= 2){
+              const comp = shiftComposition(wk, d, type, allEmps);
+              const wouldBeFinal = comp.count + 1 >= shiftTarget;
+              const supervisorOk = comp.hasSupervisor || isSupervisorRole(emp);
+              if(wouldBeFinal && !supervisorOk) continue;
+            }
+            const prevOk = !prevCell || restOkBetween(prevCell, { type, offset: 0 });
+            const nextOk = !nextCell || restOkBetween({ type, offset: 0 }, nextCell);
+            if(prevOk && nextOk){
+              wk.schedule[emp.id][d] = { type, offset: 0 };
+              current++;
+              assigned = true;
+              break;
+            }
+          }
+          if(assigned) break;
+        }
+      }
+    });
+  });
+  save();
+}
+
+// Symetria do topUpToMonthlyQuota: reset na początku autoGenerateWeek
+// traktuje KAŻDĄ już istniejącą zmianę roboczą (Rano/Między/Popołudnie) jako
+// przypiętą - również tę z poprzedniego "Generuj", sprzed np. dopisania
+// komuś urlopu. Dobijanie do wymiaru samo w sobie nigdy nie skraca, więc bez
+// tego kroku ktoś, komu wymiar zmalał już PO wcześniejszym wygenerowaniu,
+// zostawałby trwale ponad wymiar - dni wolne przestałyby się zgadzać. Tutaj
+// zdejmujemy nadwyżkę (nigdy dni zablokowanych ręcznie, urlopu ani prośby),
+// zaczynając od dni z największym zapasem ponad minimalną obsadę - tak jak
+// dobijanie, tylko w drugą stronę.
+function trimToMonthlyQuota(){
+  const weeks = getMonthWeeks(state.monthISO);
+  const allEmps = sortedEmployees().filter(e => !isAgencyWorker(e) && !isOtherStoreWorker(e));
+  const dayRefsByWeek = {};
+  getMonthDayRefs(state.monthISO).forEach(({ ws, dayIdx }) => {
+    (dayRefsByWeek[ws] || (dayRefsByWeek[ws] = new Set())).add(dayIdx);
+  });
+  const inMonthDay = (ws, d) => !!(dayRefsByWeek[ws] && dayRefsByWeek[ws].has(d));
+  const totalWorked = emp => weeks.reduce((sum, ws) =>
+    sum + (state.weeks[ws].schedule[emp.id]?.reduce((s,c,d) => s + (inMonthDay(ws,d) && isWorkShiftType(c.type) ? 1 : 0), 0) || 0), 0);
+  const countFor = (wk, d, type) => allEmps.reduce((acc, e) => acc + (wk.schedule[e.id][d].type === type ? 1 : 0), 0);
+  const targetFor = (wk, d, type) => type==='R' ? wk.targets[d].r : type==='P' ? wk.targets[d].p : (state.settings.miedzyEnabled ? wk.targets[d].m : 0);
+
+  allEmps.forEach(emp => {
+    const quota = effectiveQuotaFor(emp);
+    let current = totalWorked(emp);
+    if(current <= quota) return;
+
+    const candidates = [];
+    weeks.forEach(ws => {
+      const wk = ensureWeek(ws);
+      const idxs = dayRefsByWeek[ws];
+      if(!idxs) return;
+      idxs.forEach(d => {
+        const cell = wk.schedule[emp.id][d];
+        if(!isWorkShiftType(cell.type) || cell.locked) return;
+        const surplus = countFor(wk, d, cell.type) - targetFor(wk, d, cell.type);
+        candidates.push({ d, wk, surplus });
+      });
+    });
+    candidates.sort((a, b) => b.surplus - a.surplus);
+
+    for(const { d, wk } of candidates){
+      if(current <= quota) break;
+      wk.schedule[emp.id][d] = { type: 'W', offset: 0 };
+      current--;
+    }
+  });
+  save();
+}
+
+document.getElementById('generateBtn').addEventListener('click', () => {
+  const weeks = getMonthWeeks(state.monthISO);
+  // Kolejność wg reguł użytkownika:
+  //  1. Rano/Popołudnie na każdym dniu (+ rotacja blokowa) - do minimalnej
+  //     obsady.
+  //  2. Między - tylko na dniach, gdzie Rano i Popołudnie mają już minimum, do
+  //     jej minimalnej obsady. Musi się to zdarzyć PRZED dobijaniem do
+  //     wymiaru - inaczej dobijanie potrafi wyczerpać cały wymiar nadwyżkowych
+  //     osób na powielonym Rano/Popołudnie, zanim Między dostanie jakąkolwiek
+  //     szansę wchłonąć tę nadwyżkę.
+  //  3. Dobij wszystkich do miesięcznego wymiaru - najpierw bez przekraczania
+  //     żadnej minimalnej obsady (Rano/Popołudnie przed Między), potem (tylko
+  //     jeśli nadal brakuje) z dopuszczeniem przekroczenia - Rano/Popołudnie
+  //     nadal pierwsze, Między dopiero gdy są już pełne danego dnia.
+  //  4. Jeśli gdzieś nadal brakuje Rano/Popołudnia, a ktoś ma Między (tego lub
+  //     innego dnia), przenieś go z Między na brakującą zmianę.
+  //  5. Ostatnia gwarancja: minimalna obsada ma się zgadzać KAŻDEGO dnia -
+  //     przenosimy nadwyżkowe osoby (z dni ponad minimum) na dni z niedoborem,
+  //     bez zmiany niczyjego etatu (dzień wolny tylko wędruje na inną datę).
+  //  6. Na końcu: jeśli komuś mimo to zostało więcej dni pracy niż jego
+  //     aktualny wymiar (np. zmiany przetrwałe z poprzedniego "Generuj",
+  //     sprzed dopisania urlopu), przycinamy nadwyżkę z powrotem do Wolne -
+  //     dni wolne muszą się zgadzać z wymiarem, bez wyjątków, w obie strony.
+  weeks.forEach(ws => autoGenerateWeek(ws, { skipM: true }));
+  weeks.forEach(ws => autoGenerateWeek(ws, { skipM: false }));
+  topUpToMonthlyQuota({ skipM: false });
+  reassignMiedzyToCoverShortage();
+  rebalanceToMeetMinimum();
+  fillShortagesWithOtherStore();
+  preferAfternoonForSurplus();
+  trimToMonthlyQuota();
+  renderMonth();
+});
+
+// Resets every shift in the displayed month back to "Wolne", but keeps
+// prośby/urlopy (absences) intact - so the user only has to supply days off
+// for the month and then hit "Generuj cały miesiąc" for a fresh schedule.
+document.getElementById('printBtn').addEventListener('click', () => {
+  window.print();
+});
+
+document.getElementById('exportBtn').addEventListener('click', () => {
+  const dataStr = JSON.stringify(state, null, 2);
+  const blob = new Blob([dataStr], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `grafik-pracy-eksport-${isoDate(new Date())}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById('importBtn').addEventListener('click', () => {
+  document.getElementById('importFileInput').click();
+});
+
+document.getElementById('importFileInput').addEventListener('change', (ev) => {
+  const file = ev.target.files[0];
+  ev.target.value = ''; // allow re-selecting the same file name later
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    let parsed;
+    try{
+      parsed = JSON.parse(reader.result);
+    }catch(e){
+      window.alert('Nie udało się odczytać pliku: to nie jest poprawny plik JSON.');
+      return;
+    }
+    if(!parsed || !parsed.employees || !parsed.weeks){
+      window.alert('Ten plik nie wygląda na eksport z Grafiku pracy (brak oczekiwanych danych).');
+      return;
+    }
+    if(!window.confirm('Import nadpisze WSZYSTKIE obecne dane (zespół, grafik, ustawienia) w tej przeglądarce. Kontynuować?')) return;
+    applyLoadedState(parsed);
+    save();
+    renderAll();
+    window.alert('Dane zaimportowane pomyślnie.');
+  };
+  reader.readAsText(file);
+});
+
+document.getElementById('clearMonthBtn').addEventListener('click', () => {
+  if(!window.confirm('Wyczyścić CAŁY grafik tego miesiąca (łącznie z urlopami, prośbami o wolne i ręcznie ustawionymi dniami)? Tej operacji nie można cofnąć.')) return;
+  getMonthWeeks(state.monthISO).forEach(ws => {
+    const w = ensureWeek(ws);
+    state.employees.forEach(emp => {
+      for(let d=0; d<7; d++){
+        w.schedule[emp.id][d] = { type: 'W', offset: 0 };
+        w.absences[emp.id][d] = null;
+      }
+    });
+  });
+  save();
+  renderMonth();
+});
+
+document.getElementById('clearMonthKeepAbsencesBtn').addEventListener('click', () => {
+  if(!window.confirm('Wyczyścić wygenerowane zmiany w tym miesiącu? Ręcznie ustawione dni (urlop, prośba o wolne, wolne, zamknięte) zostaną zachowane.')) return;
+  getMonthWeeks(state.monthISO).forEach(ws => {
+    const w = ensureWeek(ws);
+    state.employees.forEach(emp => {
+      for(let d=0; d<7; d++){
+        if(w.schedule[emp.id][d] && w.schedule[emp.id][d].locked) continue; // ręcznie ustawiony dzień - nietykalny
+        const absence = w.absences[emp.id][d];
+        w.schedule[emp.id][d] = { type: absence || 'W', offset: 0 };
+      }
+    });
+  });
+  save();
+  renderMonth();
+});
+
+/* ---------- Month navigation ---------- */
+
+function setMonthLabel(){
+  const [year, month] = state.monthISO.split('-').map(Number);
+  const label = new Date(year, month-1, 1).toLocaleDateString('pl-PL', { month:'long', year:'numeric' });
+  const capitalized = label.charAt(0).toUpperCase() + label.slice(1);
+  document.getElementById('monthLabel').textContent = capitalized;
+  document.getElementById('printMonthLabel').textContent = capitalized;
+}
+
+function shiftMonth(delta){
+  const [year, month] = state.monthISO.split('-').map(Number);
+  const d = new Date(year, month-1+delta, 1);
+  state.monthISO = ymKey(d);
+  save(); renderAll();
+}
+
+document.getElementById('prevMonth').addEventListener('click', () => shiftMonth(-1));
+document.getElementById('nextMonth').addEventListener('click', () => shiftMonth(1));
+
+/* ---------- Init ---------- */
+
+function seedDefaultsIfEmpty(){
+  if(state.employees.length === 0){
+    state.employees = [
+      { id: uid(), name:'Kierownik Sklepu', position:'Kierownik', blockRotation:false, blockStartType:'R' },
+      { id: uid(), name:'Zastępca Kierownika', position:'Zastępca kierownika', blockRotation:false, blockStartType:'R' },
+      { id: uid(), name:'Pracownik Funkcyjny 1', position:'Pracownik funkcyjny', blockRotation:true, blockStartType:'R' },
+      { id: uid(), name:'Pracownik Sklepu 1', position:'Pracownik sklepu', blockRotation:false, blockStartType:'R' },
+      { id: uid(), name:'Pracownik Sklepu 2', position:'Pracownik sklepu', blockRotation:true, blockStartType:'P' }
+    ];
+  }
+}
+
+function renderAll(){
+  document.getElementById('ranoStart').value = state.settings.ranoStart;
+  document.getElementById('ranoStartMin').value = state.settings.ranoStartMin;
+  document.getElementById('popoStart').value = state.settings.popoStart;
+  document.getElementById('popoStartMin').value = state.settings.popoStartMin;
+  document.getElementById('miedzyStart').value = state.settings.miedzyStart;
+  document.getElementById('miedzyStartMin').value = state.settings.miedzyStartMin;
+  document.getElementById('enableMiedzy').checked = state.settings.miedzyEnabled;
+  document.getElementById('blockRuleAll').checked = state.settings.blockRuleAll;
+  setMonthLabel();
+  renderEmployeeTable();
+  renderMonth();
+}
+
+load();
+seedDefaultsIfEmpty();
+save();
+renderAll();
+</script>
+</body>
+</html>
